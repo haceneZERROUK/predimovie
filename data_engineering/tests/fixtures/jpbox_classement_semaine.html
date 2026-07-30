@@ -1,0 +1,1582 @@
+<!DOCTYPE html>
+<html lang="fr">
+    <head>
+        <title>JPBoxOffice - Hebdo France - DU 22 AU 28 Juillet 2026</title>
+        <!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-7LDVBMJHB8"></script>
+<script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() {
+        dataLayer.push(arguments);
+    }
+    gtag('js', new Date());
+
+    gtag('config', 'G-7LDVBMJHB8');
+</script>
+<meta name="description" content="JP Box-Office : chiffres du cinéma en France, aux États-Unis et dans le monde. Box-office, entrées, records, statistiques et classements.">
+<link rel="canonical" href="https://www.jpbox-office.com/">
+<meta name="google-site-verification" content="bcBoJFP2Qurd631HXmogoZUnq65q5_5423fNTixjd2Q" />
+<meta http-equiv="refresh" content="300">
+<meta charset="UTF-8">
+
+<link rel="stylesheet" href="style_2023v2.css" type="text/css" />
+<link rel="stylesheet" href="chart.css">
+
+<!-- Calendrier -->
+<script type="text/javascript" src="tcal.js"></script>
+
+<!-- Our project just needs Font Awesome Solid + Brands -->
+<link rel="stylesheet" href="fontawesome/css/all.css" type="text/css" />
+<script defer src="/fontawesome/js/solid.js"></script>
+<script defer src="/fontawesome/js/fontawesome.js"></script>
+<script defer src="/fontawesome/js/brands.js"></script>
+
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+
+        const input = document.getElementById('searchInput');
+        const box = document.getElementById('suggestionsBox');
+
+        input.addEventListener('keyup', function () {
+            let q = this.value.trim();
+
+            if (q.length < 2) {
+                box.style.display = 'none';
+                return;
+            }
+
+            fetch('autocomplete_search.php?q=' + encodeURIComponent(q))
+                    .then(r => r.text()) // <-- on lit en TEXTE, pas en JSON
+                    .then(txt => {
+
+                        // --- VERSION BLINDÉE ---
+                        // On extrait UNIQUEMENT le JSON valide
+                        let jsonStart = txt.indexOf('[');
+                        let jsonEnd = txt.lastIndexOf(']') + 1;
+
+                        if (jsonStart === -1 || jsonEnd === -1) {
+                            console.warn("Réponse polluée par Edge :", txt);
+                            return [];
+                        }
+
+                        let cleanJson = txt.substring(jsonStart, jsonEnd);
+
+                        let data;
+                        try {
+                            data = JSON.parse(cleanJson);
+                        } catch (e) {
+                            console.error("JSON invalide après nettoyage :", cleanJson);
+                            return [];
+                        }
+
+                        // --- AFFICHAGE ---
+                        box.innerHTML = '';
+
+                        if (!data || data.length === 0) {
+                            box.style.display = 'none';
+                            return;
+                        }
+
+                        data.forEach(item => {
+                            let div = document.createElement('div');
+                            div.style.padding = '6px';
+                            div.style.cursor = 'pointer';
+                            div.style.borderBottom = "1px solid #eee";
+
+                            const img = new Image();
+                            img.src = item.image;
+
+                            img.onload = function () {
+                                // L'image existe → on l'affiche
+                                div.innerHTML = `
+                                    <div style="display:flex; align-items:center; gap:8px;">
+                                        <img src="${item.image}" 
+                                             style="width:32px; height:50px; object-fit:cover; border-radius:1px;">
+                                        <div>
+                                            <strong>${item.value}</strong><br>
+                                            <span style="font-size:10px; color:#777;">${item.extra}</span>
+                                        </div>
+                                    </div>
+                                `;
+                            };
+
+                            img.onerror = function () {
+                                // L'image n'existe pas → on affiche seulement le texte
+                                div.innerHTML = `
+                                    <div>
+                                        <strong>${item.value}</strong><br>
+                                        <span style="font-size:10px; color:#777;">${item.extra}</span>
+                                    </div>
+                                `;
+                            };
+
+
+                            div.onclick = function () {
+                                // On remplit le champ
+                                input.value = item.value;
+                                box.style.display = 'none';
+
+                                // Redirection automatique selon le type
+                                if (item.label.toLowerCase() === "film") {
+                                    window.location.href = "fichfilm.php?id=" + item.id;
+                                } else if (item.label.toLowerCase() === "star") {
+                                    window.location.href = "fichacteur.php?id=" + item.id;
+                                }
+                            };
+
+                            box.appendChild(div);
+                        });
+
+                        const rect = input.getBoundingClientRect();
+                        box.style.left = rect.left + "px";
+                        box.style.top = (rect.bottom + window.scrollY) + "px";
+                        box.style.width = rect.width + "px";
+
+                        box.style.display = 'block';
+                    });
+        });
+
+        document.addEventListener('click', function (e) {
+            if (!box.contains(e.target) && e.target !== input) {
+                box.style.display = 'none';
+            }
+        });
+
+    });
+
+</script>        <style>
+            #my-chart .column {
+                height: 250px;
+                max-width: 990px;
+                margin: 0 auto;
+                float: left;
+                --color: #1d9cf7;
+            }
+            #my-chart2 .bar {
+                height: 100px;
+                max-width: 240px;
+                margin: 0 auto;
+                float: right;
+                --color: #1d9cf7;
+            }
+            #my-chart caption, #my-chart2 caption {
+                font-size: 14px;
+                text-align: center;
+                height: 20px;
+            }
+            #my-chart th, #my-chart2 th {
+                font-size: 10px;
+            }
+            #my-chart td {
+                font-size: 9px;
+                text-align: center;
+            }
+            #my-chart2 td {
+                font-size: 9px;
+                white-space: nowrap;
+            }
+            #my-chart a, #my-chart2 a {
+                color: #1d9cf7;
+                text-decoration: none;
+                font-size: 14px;
+            }
+            #my-chart a:hover, #my-chart2 a:hover {
+                text-decoration: underline;
+                color: #1D1D1B;
+            }
+
+        </style>
+    </head>
+    <body>
+        <table class="tablelarge0">
+    <tr>
+        <td width="50%" valign="middle">
+            <div class="form_search">
+                <form method="post" action="search.php">
+                    <input name="search" id="searchInput" type="text" autocomplete="off"
+                           placeholder="Que recherchez-vous? un film, une star,..." />
+                    <div id="suggestionsBox"
+                         style="position:absolute; background:white; border:1px solid #ccc; display:none;
+                         max-height:200px; overflow-y:auto; width:300px; z-index:9999;">
+                    </div>
+                    <input type="image" src="cinema/images/menu/searchicon.gif" name="submit" />
+                </form>
+            </div></td>
+        <td>
+            <div align="right">
+                    <button onclick="document.getElementById('id01').style.display = 'block'" class="modal-loginbtn"><i class="fa-solid fa-right-to-bracket"></i>Se connecter</button>
+                    <button onclick="document.getElementById('id03').style.display = 'block'" class="modal-loginbtn"><i class="fa-solid fa-user-plus"></i>Cr&eacute;er un compte</button>
+                <button onclick="document.getElementById('id02').style.display = 'block'" class="modal-loginbtn"><i class="fa-solid fa-envelope"></i>Ecrire</button>
+            </div>
+        </td>
+    </tr>
+</table>
+<nav id="nav1">
+    <div id="logo"><span class="logo_span">JP</span>Box-Office</div>
+    <ul class="menu">
+        <li><a href="index.php"><span style="padding-left: 5px;padding-right: 5px;"><i class="fa-solid fa-house"></i></span></a></li>
+        <li>
+            <a href="#">France</a>
+            <ul>
+                <li><a href="v9_main_country.php?view=2">G&eacute;n&eacute;ralit&eacute;s</a></li>
+                <li><a href="v9_charts_total.php?view=2">Entr&eacute;es</a>
+                    <ul>
+                        <li><a href="v9_charts_total.php?view=2&filtre=datefr&infla=0&variable=2026">Classement 2026</a></li>
+                        <li><a href="v9_charts_total.php?view=2&filtre=datefr&infla=0&variable=2025">Classement 2025</a></li>
+                    </ul>
+                </li>
+                <li><a href="#"><span style="padding-right: 5px;"><i class="fa-solid fa-angle-right"></i></span>Autres classements</a>
+                    <ul>
+                        <li><a href="v9_avantpremiere.php?view=2">Avant-Premi&egrave;res</a></li>
+                        <li><a href="v9_1seance.php?view=2">Premi&egrave;res S&eacute;ances</a></li>
+                        <li><a href="v9_1jour.php?view=2">Premiers Jours</a></li>
+                        <li><a href="v9_1weekend.php?view=2">Premiers WeekEnds</a></li>
+                        <li><a href="v9_demarrage.php?view=2">Premi&egrave;res Semaines</a></li>
+                        <li><a href="v9_top_semaines.php?view=2">Autres Semaines</a></li>
+                    </ul>
+                </li>
+                <li><a href="bilanfr.php">Bilans Annuels</a></li>
+                <li><a href="v9_hebdomadaire.php?view=2">Suivi Hebdo</a></li>
+                <li><a href="v9_club.php?view=2">Club des Millionaires</a></li>
+                <li><a href="v9_records_pays.php?view=2">Quelques Records</a></li>
+                <li>
+                    <a href="#"><span style="padding-right: 5px;"><i class="fa-solid fa-angle-right"></i></span>Plus de chiffres</a>
+                    <ul>
+                        <li><a href="v9_overseas_classgen.php?idpays=25">Recettes</a></li>
+                        <li><a href="sallesf.php">Chiffres des Cin&eacute;mas</a></li>
+                        <li><a href="cnc.php">D&eacute;mographie</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+        <li>
+            <a href="#"><span style="padding-left: 5px;padding-right: 5px;"><i class="fa-solid fa-flag-usa"></i></span>Etats-Unis</a>
+            <ul>
+                <li><a href="v9_main_country.php?view=1">G&eacute;n&eacute;ralit&eacute;s</a></li>
+                <li><a href="v9_charts_total.php?view=1">Recettes</a>
+                    <ul>
+                        <li><a href="v9_charts_total.php?view=1&filtre=dateus&infla=0&variable=2026">Classement 2026</a></li>
+                        <li><a href="v9_charts_total.php?view=1&filtre=dateus&infla=0&variable=2025">Classement 2025</a></li>
+                    </ul>
+                </li> 
+                <li><a href="#"><span style="padding-right: 5px;"><i class="fa-solid fa-angle-right"></i></span>Autres classements</a>
+                    <ul><li><a href="v9_avantpremiere.php?view=1">Exploitations limit&eacute;es</a></li>
+                        <li><a href="v9_1seance.php?view=1">Premi&egrave;res S&eacute;ances</a></li>
+                        <li><a href="v9_1jour.php?view=1">Premiers Jours</a></li>
+                        <li><a href="v9_top_jours.php?view=1">Autres Jours</a></li>
+                        <li><a href="v9_1weekend.php?view=1">Premiers WeekEnds</a></li>
+                        <li><a href="v9_top_semaines.php?view=1">Autres WeekEnds</a></li>
+                        <li><a href="v9_demarrage.php?view=1">Premi&egrave;res Semaines</a></li>
+                    </ul>
+                </li>
+                <li><a href="v9_bilan_pays.php?view=1">Bilans Annuels</a></li>
+                <li><a href="v9_hebdomadaire.php?view=1">Suivi Hebdo</a></li>
+                <li><a href="v9_club.php?view=1">Club des 100M$</a></li>
+                <li><a href="v9_records_pays.php?view=1">Quelques Records</a></li>
+                <li>
+                    <a href="#"><span style="padding-right: 5px;"><i class="fa-solid fa-angle-right"></i></span>March&eacute; Vid&eacute;o</a>
+                    <ul>
+                        <li><a href="v9_charts_general_video.php?view=br">Ventes Blu-Ray</a></li>
+                        <li><a href="v9_charts_general_video.php?view=dvd">Ventes DVD</a></li>
+                        <li><a href="v9_charts_general_video.php?view=vhs">Ventes VHS</a></li>
+                        <li><a href="v9_charts_general_video.php?view=brL">Locations Blu-Ray</a></li>
+                        <li><a href="v9_charts_general_video.php?view=dvdL">Locations DVD</a></li>
+                        <li><a href="v9_charts_general_video.php?view=vhsL">Locations VHS</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+        <li>
+            <a href="#">Paris</a>
+            <ul>
+                <li><a href="v9_main_country.php?view=3">G&eacute;n&eacute;ralit&eacute;s</a></li>
+                <li><a href="v9_charts_total.php?view=3">Entr&eacute;es</a>
+                    <ul>
+                        <li><a href="v9_charts_total.php?view=3&filtre=datefr&infla=0&variable=2026">Classement 2026</a></li>
+                        <li><a href="v9_charts_total.php?view=3&filtre=datefr&infla=0&variable=2025">Classement 2025</a></li>
+                    </ul>
+                </li>
+                <li><a href="#"><span style="padding-right: 5px;"><i class="fa-solid fa-angle-right"></i></span>Autres classements</a>
+                    <ul>
+                        <li><a href="v9_1seance.php?view=3">Premi&egrave;res S&eacute;ances</a></li>
+                        <li><a href="v9_1jour.php?view=3">Premiers Jours</a></li>
+                        <li><a href="v9_top_jours.php?view=3">Autres Jours</a></li>
+                        <li><a href="v9_1weekend.php?view=3">Premiers WeekEnds</a></li>
+                        <li><a href="v9_demarrage.php?view=3">Premi&egrave;res Semaines</a></li>
+                        <li><a href="v9_top_semaines.php?view=3">Autres Semaines</a></li>
+                    </ul>
+                </li>
+                <li><a href="v9_bilan_pays.php?view=3">Bilans Annuels</a></li>
+                <li><a href="v9_hebdomadaire.php?view=3">Suivi Hebdo</a></li>
+                <li><a href="v9_club.php?view=3">Club des Millionaires</a></li>
+                <li><a href="v9_records_pays.php?view=3">Quelques Records</a></li>
+            </ul>
+        </li>
+        <li>
+            <a href="#">Autres Pays</a>
+            <ul>
+                <li>
+                    <a href="#"><span style="padding-right: 5px;"><i class="fa-solid fa-angle-right"></i></span>Allemagne</a>
+                    <ul>
+                        <li><a href="v9_main_country.php?view=4">G&eacute;n&eacute;ralit&eacute;s</a></li>
+                        <li><a href="v9_charts_total.php?view=4">Entr&eacute;es</a></li>
+                        <li><a href="v9_1weekend.php?view=4">Premiers WeekEnds</a></li>
+                        <li><a href="v9_demarrage.php?view=4">Premi&egrave;res Semaines</a></li>
+                        <li><a href="v9_top_semaines.php?view=4">Autres Semaines</a></li>
+                        <li><a href="v9_bilan_pays.php?view=4">Bilans Annuels</a></li>
+                        <li><a href="v9_hebdomadaire.php?view=4">Suivi Hebdo</a></li>
+                        <li><a href="v9_club.php?view=4">Club des Millionaires</a></li>
+                        <li><a href="v9_records_pays.php?view=4">Quelques Records</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#"><span style="padding-right: 5px;"><i class="fa-solid fa-angle-right"></i></span>Br&eacute;sil</a>
+                    <ul>
+                        <li><a href="v9_main_country.php?view=36">G&eacute;n&eacute;ralit&eacute;s</a></li>
+                        <li><a href="v9_charts_total.php?view=36">Entr&eacute;es</a></li>
+                        <li><a href="v9_demarrage.php?view=36">Premiers WeekEnds</a></li>
+                        <li><a href="v9_top_semaines.php?view=36">Autres WeekEnds</a></li>
+                        <li><a href="v9_bilan_pays.php?view=36">Bilans Annuels</a></li>
+                        <li><a href="v9_hebdomadaire.php?view=36">Suivi Hebdo</a></li>
+                        <li><a href="v9_club.php?view=36">Club des Millionaires</a></li>
+                        <li><a href="v9_records_pays.php?view=36">Quelques Records</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#"><span style="padding-right: 5px;"><i class="fa-solid fa-angle-right"></i></span>Chine</a>
+                    <ul>
+                        <li><a href="v9_main_country.php?view=30">G&eacute;n&eacute;ralit&eacute;s</a></li>
+                        <li><a href="v9_charts_total.php?view=30">Entr&eacute;es</a></li>
+                        <li><a href="v9_1jour.php?view=30">Premiers Jours</a></li>
+                        <li><a href="v9_top_jours.php?view=30">Autres Jours</a></li>
+                        <li><a href="v9_demarrage.php?view=30">Premiers Semaines</a></li>
+                        <li><a href="v9_top_semaines.php?view=30">Autres Semaines</a></li>  
+                        <li><a href="v9_bilan_pays.php?view=30">Bilans Annuels</a></li>
+                        <li><a href="v9_hebdomadaire.php?view=30">Suivi Hebdo</a></li>
+                        <li><a href="v9_club.php?view=30">Club des Millionaires</a></li>
+                        <li><a href="v9_records_pays.php?view=30">Quelques Records</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#"><span style="padding-right: 5px;"><i class="fa-solid fa-angle-right"></i></span>Cor&eacute;e du Sud</a>
+                    <ul>
+                        <li><a href="v9_main_country.php?view=34">G&eacute;n&eacute;ralit&eacute;s</a></li>
+                        <li><a href="v9_charts_total.php?view=34">Entr&eacute;es</a></li>
+                        <li><a href="v9_demarrage.php?view=34">Premiers WeekEnds</a></li>
+                        <li><a href="v9_top_semaines.php?view=34">Autres WeekEnds</a></li>
+                        <li><a href="v9_bilan_pays.php?view=34">Bilans Annuels</a></li>
+                        <li><a href="v9_hebdomadaire.php?view=34">Suivi Hebdo</a></li>
+                        <li><a href="v9_club.php?view=34">Club des Millionaires</a></li>
+                        <li><a href="v9_records_pays.php?view=34">Quelques Records</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#"><span style="padding-right: 5px;"><i class="fa-solid fa-angle-right"></i></span>Espagne</a>
+                    <ul>
+                        <li><a href="v9_main_country.php?view=33">G&eacute;n&eacute;ralit&eacute;s</a></li>
+                        <li><a href="v9_charts_total.php?view=33">Entr&eacute;es</a></li>
+                        <li><a href="v9_demarrage.php?view=33">Premiers WeekEnds</a></li>
+                        <li><a href="v9_top_semaines.php?view=33">Autres WeekEnds</a></li>
+                        <li><a href="v9_bilan_pays.php?view=33">Bilans Annuels</a></li>
+                        <li><a href="v9_hebdomadaire.php?view=33">Suivi Hebdo</a></li>
+                        <li><a href="v9_club.php?view=33">Club des Millionaires</a></li>
+                        <li><a href="v9_records_pays.php?view=33">Quelques Records</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#"><span style="padding-right: 5px;"><i class="fa-solid fa-angle-right"></i></span>Italie</a>
+                    <ul>
+                        <li><a href="v9_main_country.php?view=32">G&eacute;n&eacute;ralit&eacute;s</a></li>
+                        <li><a href="v9_charts_total.php?view=32">Entr&eacute;es</a></li>
+                        <li><a href="v9_demarrage.php?view=32">Premiers WeekEnds</a></li>
+                        <li><a href="v9_top_semainesp.php?view=32">Autres WeekEnds</a></li>
+                        <li><a href="v9_bilan_pays.php?view=32">Bilans Annuels</a></li>
+                        <li><a href="v9_hebdomadaire.php?view=32">Suivi Hebdo</a></li>
+                        <li><a href="v9_club.php?view=32">Club des Millionaires</a></li>
+                        <li><a href="v9_records_pays.php?view=32">Quelques Records</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#"><span style="padding-right: 5px;"><i class="fa-solid fa-angle-right"></i></span>Russie</a>
+                    <ul>
+                        <li><a href="v9_main_country.php?view=35">G&eacute;n&eacute;ralit&eacute;s</a></li>
+                        <li><a href="v9_charts_total.php?view=35">Entr&eacute;es</a></li>
+                        <li><a href="v9_demarrage.php?view=35">Premiers WeekEnds</a></li>
+                        <li><a href="v9_top_semaines.php?view=35">Autres WeekEnds</a></li>
+                        <li><a href="v9_bilan_pays.php?view=35">Bilans Annuels</a></li>
+                        <li><a href="v9_hebdomadaire.php?view=35">Suivi Hebdo</a></li>
+                        <li><a href="v9_club.php?view=35">Club des Millionaires</a></li>
+                        <li><a href="v9_records_pays.php?view=35">Quelques Records</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+        <li>
+            <a href="#"><span style="padding-left: 5px;padding-right: 5px;"><i class="fa-solid fa-globe"></i></span>Monde</a>
+            <ul>
+                <li><a href="v9_main_country.php?view=6">G&eacute;n&eacute;ralit&eacute;s</a></li>
+                <li><a href="v9_charts_total.php?view=6">Recettes Mondiales</a>
+                    <ul>
+                        <li><a href="v9_charts_total.php?view=6&filtre=production&infla=0&variable=2026">Classement 2026</a></li>
+                        <li><a href="v9_charts_total.php?view=6&filtre=production&infla=0&variable=2025">Classement 2025</a></li>
+                    </ul>
+                </li>
+                <li><a href="v9_charts_total.php?view=5">Recettes Inter.</a>
+                    <ul>
+                        <li><a href="v9_charts_total.php?view=5&filtre=production&infla=0&variable=2026">Classement 2026</a></li>
+                        <li><a href="v9_charts_total.php?view=5&filtre=production&infla=0&variable=2025">Classement 2025</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#"><span style="padding-right: 5px;"><i class="fa-solid fa-angle-right"></i></span>Chiffres Hebdos</a>
+                    <ul>
+                        <li><a href="v9_top_semaines_monde.php">WeekEnds Monde</a></li>
+                        <li><a href="v9_top_semaines.php?view=5">WeekEnds Intern.</a></li>
+                        <li><a href="v9_hebdomadaire.php?view=5">Suivi Hebdo</a></li>
+                    </ul>
+                </li>
+                <li><a href="v9_bilan_pays.php?view=6">Bilans Annuels</a></li>
+                <li><a href="v9_france_export.php">Entr&eacute;es Prod. France</a>
+                <li><a href="v9_overseas_main.php">Top Recettes March&eacute;s</a></li>
+                <li><a href="v9_club.php?view=5">Club des 100M$</a></li>
+                <li><a href="v9_records_pays.php?view=5">Quelques Records</a></li>
+            </ul>
+        </li>
+        <li><a href="#"><span style="padding-left: 5px;padding-right: 5px;"><i class="fa-solid fa-people-group"></i></span>Stars</a>
+            <ul>
+                <li><a href="bigacteurs.php">
+                        <span style="padding-right: 5px;"><i class="fa-solid fa-users-viewfinder"></i></span>Acteurs</a></li>
+                <li><a href="bigacteurs.php?tri=2">
+                        <span style="padding-right: 5px;"><i class="fa-solid fa-camera"></i></span>R&eacute;alisateurs</a></li>
+                <li><a href="bigacteurs.php?tri=3">
+                        <span style="padding-right: 5px;"><i class="fa-solid fa-hand-holding-dollar"></i></span>Producteurs</a></li>
+                <li><a href="bigacteurs.php?tri=4">
+                        <span style="padding-right: 5px;"><i class="fa-solid fa-pencil"></i></span>Sc&eacute;naristes</a></li>
+                <li><a href="bigacteurs.php?tri=6">
+                        <span style="padding-right: 5px;"><i class="fa-solid fa-music"></i></span>Compositeurs</a></li>
+                <li><a href="bigacteurs.php?tri=5">
+                        <span style="padding-right: 5px;"><i class="fa-solid fa-book"></i></span>Ecrivains</a></li>
+                <li><a href="bigsalaires.php">
+                        <span style="padding-right: 5px;"><i class="fa-solid fa-money-bill-wave"></i></span>Salaires</a></li>
+                <li><a href="populairestars.php">
+                        <span style="padding-right: 5px;"><i class="fa-solid fa-ranking-star"></i></span>Popularit&eacute;</a></li>
+            </ul>
+        </li>
+        <li>
+            <a href="#"><span style="padding-left: 5px;padding-right: 5px;"><i class="fa-solid fa-film"></i></span>Films</a>
+            <ul>
+                <li><a href="v9_filmlst.php">
+                        <span style="padding-right: 5px;"><i class="fa-solid fa-arrow-down-z-a"></i></span>
+                        Liste Alphab&eacute;tique</a></li>
+                <li><a href="v9_pays.php">
+                        <span style="padding-right: 5px;"><i class="fa-solid fa-earth-europe"></i></span>
+                        Pays</a></li>
+                <li><a href="v9_genres.php"><span style="padding-right: 5px;"><i class="fa-solid fa-icons"></i></span>
+                        Genres</a></li>
+                <li><a href="franchises.php"><span style="padding-right: 5px;"><i class="fa-solid fa-industry"></i></span>
+                        Franchises</a></li>
+                <li><a href="budgets.php"><span style="padding-right: 5px;"><i class="fa-solid fa-sack-dollar"></i></span>
+                        Budgets</a></li>
+                <li><a href="bigprix.php"><span style="padding-right: 5px;"><i class="fa-solid fa-award"></i></span>
+                        R&eacute;compenses</a></li>
+                <li><a href="populaire.php"><span style="padding-right: 5px;"><i class="fa-solid fa-ranking-star"></i></span>
+                        Popularit&eacute;</a></li>
+            </ul>
+        </li>
+        <li>
+            <a href="#">Divers</a>
+            <ul>
+                <li><a href="v9_members_abonnes.php"><span style="padding-right: 5px;"><i class="fa-solid fa-user-group"></i></span>
+                        Les Membres</a></li>
+                <li><a href="v9_members_notes.php"><span style="padding-right: 5px;"><i class="fa-solid fa-arrow-down-9-1"></i></span>
+                        Les Notes</a></li>
+                <li><a href="v9_members_stats.php"><span style="padding-right: 5px;"><i class="fa-solid fa-chart-area"></i></span>
+                        Stats des membres</a></li>
+                <li><a href="v9_misc_links.php"><span style="padding-right: 5px;"><i class="fa-solid fa-link"></i></span>
+                        Liens</a></li>
+            </ul>
+        </li>
+        <li><a href="ratings.php"><span style="padding-left: 5px;padding-right: 5px;"><i class="fa-solid fa-circle-question"></i></span></a></li>
+        <li><a href="v9_avenir.php?fixe=1&date=2026-07-30"><span style="padding-left: 5px;padding-right: 5px;"><i class="fa-solid fa-calendar-days"></i></span></a></li>
+    </ul>
+</nav>
+<div id="id01" class="modal"> <!-- FENETRE MODALE POUR LE LOGIN !-->
+    <form class="modal-content modal-animate" action="/v9_tophebdo.php?view=2&idsem=2952" method="POST">
+        <div class="modal-container">Se connecter</div>
+        <div onclick="document.getElementById('id01').style.display = 'none'" class="modal-close" title="Close Modal">&times;</div>
+        <div class="modal-input-group">
+            <div class="modal-input-group2">
+                <i class="fa-solid fa-user" style="vertical-align: middle"></i>
+                <input class="modal-input-field" type="text" placeholder="Identifiant" name="TB_Nom_Utilisateur" required>
+            </div>
+            <div class="modal-input-group2">
+                <i class="fa-solid fa-key" style="vertical-align: middle"></i>
+                <input class="modal-input-field" type="password" placeholder="Mot de Passe" name="TB_Mot_de_Passe" required>
+            </div>
+            <div class="espace1">&nbsp;</div>
+            <button type="submit" class="modal-loginbtn2">Connexion
+                <i class="fa-solid fa-chevron-right"></i></button>
+            <label class="modal-label">
+                <input type="checkbox" checked="checked" name="CB_Connexion_Automatique">Se souvenir de moi
+            </label>
+        </div>
+        <div class="modal-container">
+            <button onclick="document.getElementById('id01').style.display = 'none'; document.getElementById('id04').style.display = 'block'">Mot de passe perdu ?</button>
+        </div>
+    </form>
+</div>
+<div id="id02" class="modal2"><!-- FENETRE MODALE POUR ECRIRE !-->
+    <form class="modal-content animate" action="/v9_tophebdo.php?view=2&idsem=2952" method="POST">
+        <div class="modal-container">Ecrire un message</div>
+        <div onclick="document.getElementById('id02').style.display = 'none'" class="modal-close" title="Close Modal">&times;</div>
+        <div class="modal-input-group">
+            <div class="modal-input-group2">
+                <i class="fa-solid fa-user" style="vertical-align: middle"></i>
+                <input class="modal-input-field" type="text" placeholder="Identifiant" name="email_nom" value="Votre nom" required>
+            </div>
+            <div class="modal-input-group2">
+                <i class="fa-solid fa-tags" style="vertical-align: middle"></i>
+                <input class="modal-input-field" type="text" name="email_sujet" placeholder="(Saisir le sujet)">
+            </div>
+            <div class="modal-input-group2">
+                <i class="fa-solid fa-envelope" style="vertical-align: middle"></i>
+                <input class="modal-input-field" type="email" name="email_mail" value="Votre adresse email">
+            </div>
+            <div class="espace1">&nbsp;</div>
+            <textarea style="margin-left: 20px;" class="modal-input-field" name="email_msg" rows="8" cols="100" placeholder="(Votre message)"></textarea>
+            <button type="submit" class="modal-loginbtn2">Envoyer
+                <i class="fa-solid fa-chevron-right"></i></button>
+        </div>
+    </form>
+</div>
+<div id="id03" class="modal"><!-- CREER UN COMPTE !-->
+    <form class="modal-content modal-animate" action="creer-compte-utilisateur.php" method="POST">
+        <div class="modal-container">Cr&eacute;er un compte</div>
+        <div onclick="document.getElementById('id03').style.display = 'none'" class="modal-close" title="Close Modal">&times;</div>
+        <div class="modal-input-group">
+            <div class="modal-input-group2">
+                <i class="fa-solid fa-user" style="vertical-align: middle"></i>
+                <input class="modal-input-field" type="text" placeholder="(Identifiant - 4 &agrave; 20 caract&egrave;res)" name="TB_Nom_Utilisateur" required>
+            </div>
+            <div class="modal-input-group2">
+                <i class="fa-solid fa-key" style="vertical-align: middle"></i>
+                <input class="modal-input-field" type="password" placeholder="(Mot de Passe - 6 caract&egrave;res)" name="TB_Mot_de_Passe" required>
+            </div>
+            <div class="modal-input-group2">
+                <i class="fa-solid fa-key" style="vertical-align: middle"></i>
+                <input class="modal-input-field" type="password" placeholder="(Mot de Passe - 6 caract&egrave;res)" name="TB_Confirmation_Mot_de_Passe" required>
+            </div>
+            <div class="modal-input-group2">
+                <i class="fa-solid fa-envelope" style="vertical-align: middle"></i>
+                <input class="modal-input-field" type="email" placeholder="Votre adresse email" name="TB_Adresse_Email" required>
+            </div>
+            <div class="espace1">&nbsp;</div>
+            <button type="submit" class="modal-loginbtn2">Cr&eacute;ation
+                <i class="fa-solid fa-chevron-right"></i></button>
+        </div>
+    </form>
+</div>
+<div id="id04" class="modal"><!-- PERTE DE MDP !-->
+    <form class="modal-content modal-animate" action="game_MDP.php" method="POST">
+        <div class="modal-container">Mot de passe perdu</div>
+        <div onclick="document.getElementById('id04').style.display = 'none'" class="modal-close" title="Close Modal">&times;</div>
+        <div class="modal-input-group">
+            <div class="modal-input-group2">
+                <i class="fa-solid envelope" style="vertical-align: middle"></i>
+                <input class="modal-input-field" type="email" placeholder="Votre adresse email" name="TB_Adresse_Email" required>
+            </div>
+            <div class="espace1">&nbsp;</div>
+            <button type="submit" class="modal-loginbtn2">Renvoyer
+                <i class="fa-solid fa-chevron-right"></i></button>
+        </div>
+    </form>
+</div>        <div id="content">
+            <table class="table_2022titre">
+                <tr>
+                    <td class="blocgauche_2022titre_image">
+                        <img class="image-ronde" src="cinema/images/menu/top20.jpg" alt="TOP20"/></td>
+                    <td class="texte_2022titre"><h1>
+                            CLASSEMENT HEBDOMADAIRE France</h1>
+                        <h2>Semaine 30 - DU 22 AU 28 Juillet 2026</h2>
+                                                <h4>
+                            <a href="v9_hebdomadaire.php?year=2026&view=2">
+                                Entr&eacute;es Hebdomadaires 2026</a></h4>
+                                                    <h4><span style="padding-right: 5px;"><i class="fa-solid fa-trophy"></i></span><a href="/v9_tophebdo.php?idsem=2900&view=2">
+                                    2025</a>&nbsp; &nbsp; 
+                                <a href="fichfilm.php?id=24637&view=2">Les 4 Fantastiques, premiers pas </a>
+                                (673 015 entr&eacute;es)
+
+                            </h4>
+                                            </td>
+                    <td class="blocdroite_2022titre">
+                                                    <h1>Semaine 30</h1>
+                            <h2>3 915 630 entr&eacute;es</h2>
+                                                            <span class="fa-layers fa-fw" style="margin-left:35px; margin-top: 5px; margin-bottom: 5px;color:blue">
+                                    <i class="fa-solid fa-caret-up fa-5x"></i>
+                                    <span class="fa-layers-text fa-inverse" data-fa-transform="shrink-5 right-15%" style="font-weight:800">
+                                        +22%</span>
+                                </span>
+                                                        <h1>Cumul 2026</h1>
+                            <h2>94 140 681 entr&eacute;es</h2>
+                                                            <span class="fa-layers fa-fw" style="margin-left:35px; margin-top: 15px; color:blue">
+                                    <i class="fa-solid fa-caret-up fa-5x"></i>
+                                    <span class="fa-layers-text fa-inverse" data-fa-transform="shrink-5 right-15%" style="font-weight:800">
+                                        +9%</span>
+                                </span>
+                                                    </td>
+                </tr>
+            </table>
+            <div id="nav2">
+                <ul>
+                                            <li><a href="/v9_tophebdo.php?idsem=2900&view=2">
+                                <span style="padding-right: 1px;"><i class="fa-solid fa-backward-fast"></i></span>
+                                23/07 2025</a></li>
+                                                <li><a href="/v9_tophebdo.php?idsem=2951&view=2">
+                                <span style="padding-right: 1px;"><i class="fa-solid fa-backward-step"></i></span>
+                                15/07 2026</a></li>
+                                        <li><a href="v9_hebdomadaire.php?year=2026&view=2">
+                            <span style="padding-right: 1px;"><i class="fa-solid fa-list-ol"></i></span>
+                            Semaines 2026</a></li>
+                                        <li><a href="v9_hebdomadaire3.php?we=30&view=2">
+                            <span style="padding-right: 1px;"><i class="fa-solid fa-list-ol"></i></span>Historique - Semaines 30</a></li>
+                </ul>
+            </div>
+            <div class="espace1">&nbsp;</div>
+            
+                <table class="tablesmall">
+                    <tr>
+                        <td width="1000px">
+                            <div id="my-chart">
+                                <table class="charts-css column show-labels show-primary-axis show-2-secondary-axes data-spacing-1 show-heading">
+                                    <caption>Historique sur 20 Semaines</caption>
+                                    <tbody>
+                                                                                    <tr>
+                                                <th>10/2026</th>
+                                                <td style = "--size:0.35339354835362;">
+                                                    <span class="data">2,7 M entr&eacute;es</span>
+                                                    <span class="tooltip">2 724 325 entr&eacute;es<br/>
+                                                        <a href="/v9_tophebdo.php?idsem=2932&view=2">
+                                                            N&deg;1<br>Jumpers.<br/>
+                                                                <img src="cinema/images/posters/A-2026-25230-20260227053032.jpg" width="60" /></a>
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                                                                    <tr>
+                                                <th>11/2026</th>
+                                                <td style = "--size:0.28509775536254;">
+                                                    <span class="data">2,2 M entr&eacute;es</span>
+                                                    <span class="tooltip">2 197 830 entr&eacute;es<br/>
+                                                        <a href="/v9_tophebdo.php?idsem=2933&view=2">
+                                                            N&deg;1<br>Jumpers.<br/>
+                                                                <img src="cinema/images/posters/A-2026-25230-20260227053032.jpg" width="60" /></a>
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                                                                    <tr>
+                                                <th>12/2026</th>
+                                                <td style = "--size:0.3701729398213;">
+                                                    <span class="data">2,9 M entr&eacute;es</span>
+                                                    <span class="tooltip">2 853 678 entr&eacute;es<br/>
+                                                        <a href="/v9_tophebdo.php?idsem=2934&view=2">
+                                                            N&deg;1<br>Projet dernière chance.<br/>
+                                                                <img src="cinema/images/posters/A-2026-24749-20260314121635.jpg" width="60" /></a>
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                                                                    <tr>
+                                                <th>13/2026</th>
+                                                <td style = "--size:0.27531197139981;">
+                                                    <span class="data">2,1 M entr&eacute;es</span>
+                                                    <span class="tooltip">2 122 391 entr&eacute;es<br/>
+                                                        <a href="/v9_tophebdo.php?idsem=2935&view=2">
+                                                            N&deg;1<br>Projet dernière chance.<br/>
+                                                                <img src="cinema/images/posters/A-2026-24749-20260314121635.jpg" width="60" /></a>
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                                                                    <tr>
+                                                <th>14/2026</th>
+                                                <td style = "--size:0.49123314965288;">
+                                                    <span class="data">3,8 M entr&eacute;es</span>
+                                                    <span class="tooltip">3 786 936 entr&eacute;es<br/>
+                                                        <a href="/v9_tophebdo.php?idsem=2936&view=2">
+                                                            N&deg;1<br>Super Mario Galaxy Le Fi.<br/>
+                                                                <img src="cinema/images/posters/A-2026-24882-20260321044352.jpg" width="60" /></a>
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                                                                    <tr>
+                                                <th>15/2026</th>
+                                                <td style = "--size:0.44959437232133;">
+                                                    <span class="data">3,5 M entr&eacute;es</span>
+                                                    <span class="tooltip">3 465 941 entr&eacute;es<br/>
+                                                        <a href="/v9_tophebdo.php?idsem=2937&view=2">
+                                                            N&deg;1<br>Super Mario Galaxy Le Fi.<br/>
+                                                                <img src="cinema/images/posters/A-2026-24882-20260321044352.jpg" width="60" /></a>
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                                                                    <tr>
+                                                <th>16/2026</th>
+                                                <td style = "--size:0.43505313242635;">
+                                                    <span class="data">3,4 M entr&eacute;es</span>
+                                                    <span class="tooltip">3 353 842 entr&eacute;es<br/>
+                                                        <a href="/v9_tophebdo.php?idsem=2938&view=2">
+                                                            N&deg;1<br>Super Mario Galaxy Le Fi.<br/>
+                                                                <img src="cinema/images/posters/A-2026-24882-20260321044352.jpg" width="60" /></a>
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                                                                    <tr>
+                                                <th>17/2026</th>
+                                                <td style = "--size:0.45428717453795;">
+                                                    <span class="data">3,5 M entr&eacute;es</span>
+                                                    <span class="tooltip">3 502 118 entr&eacute;es<br/>
+                                                        <a href="/v9_tophebdo.php?idsem=2939&view=2">
+                                                            N&deg;1<br>Michael (2026).<br/>
+                                                                <img src="cinema/images/posters/A-2026-24780-20260321044505.jpg" width="60" /></a>
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                                                                    <tr>
+                                                <th>18/2026</th>
+                                                <td style = "--size:0.53468084223198;">
+                                                    <span class="data">4,1 M entr&eacute;es</span>
+                                                    <span class="tooltip">4 121 876 entr&eacute;es<br/>
+                                                        <a href="/v9_tophebdo.php?idsem=2940&view=2">
+                                                            N&deg;1<br>Michael (2026).<br/>
+                                                                <img src="cinema/images/posters/A-2026-24780-20260321044505.jpg" width="60" /></a>
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                                                                    <tr>
+                                                <th>19/2026</th>
+                                                <td style = "--size:0.46587966854498;">
+                                                    <span class="data">3,6 M entr&eacute;es</span>
+                                                    <span class="tooltip">3 591 485 entr&eacute;es<br/>
+                                                        <a href="/v9_tophebdo.php?idsem=2941&view=2">
+                                                            N&deg;1<br>Michael (2026).<br/>
+                                                                <img src="cinema/images/posters/A-2026-24780-20260321044505.jpg" width="60" /></a>
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                                                                    <tr>
+                                                <th>20/2026</th>
+                                                <td style = "--size:0.49879660761911;">
+                                                    <span class="data">3,8 M entr&eacute;es</span>
+                                                    <span class="tooltip">3 845 243 entr&eacute;es<br/>
+                                                        <a href="/v9_tophebdo.php?idsem=2942&view=2">
+                                                            N&deg;1<br>Michael (2026).<br/>
+                                                                <img src="cinema/images/posters/A-2026-24780-20260321044505.jpg" width="60" /></a>
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                                                                    <tr>
+                                                <th>21/2026</th>
+                                                <td style = "--size:0.28161846351816;">
+                                                    <span class="data">2,2 M entr&eacute;es</span>
+                                                    <span class="tooltip">2 171 008 entr&eacute;es<br/>
+                                                        <a href="/v9_tophebdo.php?idsem=2943&view=2">
+                                                            N&deg;1<br>Star Wars: The Mandalori.<br/>
+                                                                <img src="cinema/images/posters/A-2025-24909-20250927124744.jpg" width="60" /></a>
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                                                                    <tr>
+                                                <th>22/2026</th>
+                                                <td style = "--size:0.20967318887955;">
+                                                    <span class="data">1,6 M entr&eacute;es</span>
+                                                    <span class="tooltip">1 616 379 entr&eacute;es<br/>
+                                                        <a href="/v9_tophebdo.php?idsem=2944&view=2">
+                                                            N&deg;1<br>Star Wars: The Mandalori.<br/>
+                                                                <img src="cinema/images/posters/A-2025-24909-20250927124744.jpg" width="60" /></a>
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                                                                    <tr>
+                                                <th>23/2026</th>
+                                                <td style = "--size:0.30834371076035;">
+                                                    <span class="data">2,4 M entr&eacute;es</span>
+                                                    <span class="tooltip">2 377 034 entr&eacute;es<br/>
+                                                        <a href="/v9_tophebdo.php?idsem=2945&view=2">
+                                                            N&deg;1<br>Scary Movie (2026).<br/>
+                                                                <img src="cinema/images/posters/A-2026-25281-20260529035956.jpg" width="60" /></a>
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                                                                    <tr>
+                                                <th>24/2026</th>
+                                                <td style = "--size:0.23293146747196;">
+                                                    <span class="data">1,8 M entr&eacute;es</span>
+                                                    <span class="tooltip">1 795 678 entr&eacute;es<br/>
+                                                        <a href="/v9_tophebdo.php?idsem=2946&view=2">
+                                                            N&deg;1<br>Disclosure Day.<br/>
+                                                                <img src="cinema/images/posters/A-2026-25078-20260321044726.jpg" width="60" /></a>
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                                                                    <tr>
+                                                <th>25/2026</th>
+                                                <td style = "--size:0.37990852298081;">
+                                                    <span class="data">2,9 M entr&eacute;es</span>
+                                                    <span class="tooltip">2 928 730 entr&eacute;es<br/>
+                                                        <a href="/v9_tophebdo.php?idsem=2947&view=2">
+                                                            N&deg;1<br>Toy Story 5.<br/>
+                                                                <img src="cinema/images/posters/A-2026-25080-20251221050210.jpg" width="60" /></a>
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                                                                    <tr>
+                                                <th>26/2026</th>
+                                                <td style = "--size:0.62736838828181;">
+                                                    <span class="data">4,8 M entr&eacute;es</span>
+                                                    <span class="tooltip">4 836 408 entr&eacute;es<br/>
+                                                        <a href="/v9_tophebdo.php?idsem=2948&view=2">
+                                                            N&deg;1<br>Toy Story 5.<br/>
+                                                                <img src="cinema/images/posters/A-2026-25080-20251221050210.jpg" width="60" /></a>
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                                                                    <tr>
+                                                <th>27/2026</th>
+                                                <td style = "--size:0.42918845926341;">
+                                                    <span class="data">3,3 M entr&eacute;es</span>
+                                                    <span class="tooltip">3 308 631 entr&eacute;es<br/>
+                                                        <a href="/v9_tophebdo.php?idsem=2949&view=2">
+                                                            N&deg;1<br>Toy Story 5.<br/>
+                                                                <img src="cinema/images/posters/A-2026-25080-20251221050210.jpg" width="60" /></a>
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                                                                    <tr>
+                                                <th>28/2026</th>
+                                                <td style = "--size:0.4471132592385;">
+                                                    <span class="data">3,4 M entr&eacute;es</span>
+                                                    <span class="tooltip">3 446 814 entr&eacute;es<br/>
+                                                        <a href="/v9_tophebdo.php?idsem=2950&view=2">
+                                                            N&deg;1<br>Vaiana, la légende du bo.<br/>
+                                                                <img src="cinema/images/posters/A-2026-25091-20260703064500.jpg" width="60" /></a>
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                                                                    <tr>
+                                                <th>29/2026</th>
+                                                <td style = "--size:0.53890691966834;">
+                                                    <span class="data">4,2 M entr&eacute;es</span>
+                                                    <span class="tooltip">4 154 455 entr&eacute;es<br/>
+                                                        <a href="/v9_tophebdo.php?idsem=2951&view=2">
+                                                            N&deg;1<br>L'Odyssée (2026).<br/>
+                                                                <img src="cinema/images/posters/A-2026-24330-20260711110650.jpg" width="60" /></a>
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                                                                    <tr>
+                                                <th>30/2026</th>
+                                                <td style = "--size:0.50792705706547;">
+                                                    <span class="data">3,9 M entr&eacute;es</span>
+                                                    <span class="tooltip">3 915 630 entr&eacute;es<br/>
+                                                        <a href="/v9_tophebdo.php?idsem=2952&view=2">
+                                                            N&deg;1<br>L'Odyssée (2026).<br/>
+                                                                <img src="cinema/images/posters/A-2026-24330-20260711110650.jpg" width="60" /></a>
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                                                            </tbody>
+                                </table>
+                            </div>
+                        </td>
+                        <td width="250" valign="bottom">
+                            <div id="my-chart2">
+                                                                <table class="charts-css bar show-labels show-heading show-primary-axis data-spacing-2 ">
+                                    <caption>Semaine 30 (sur 10 ans)</caption>
+                                    <tbody>
+                                        <tr>
+                                            <th scope="row">Minimum</th>
+                                            <td style = "--size:0.20375955586375">
+                                                <span class="data">963 799 entr&eacute;es</span>
+                                                                                                    <span class="tooltip">963 799 entr&eacute;es<br/>
+                                                        <a href="/v9_tophebdo.php?idsem=2639&view=2">
+                                                            2020<br/>Scooby !<br/>
+                                                            <img src="cinema/images/posters/19941-20200215074253-0.jpg" width="60" alt ="Scooby !"/></a></span>
+                                                                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <th scope="row">Moyenne</th>
+                                            <td style = "--size:0.72122035990935">
+                                                <span class="data">3 411 430 entr&eacute;es</span>
+                                                <span class="tooltip">3 411 430 entr&eacute;es                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <th scope="row">Maximum</th>
+                                            <td style = "--size:1;">
+                                                <span class="data">4 730 080 entr&eacute;es</span>
+                                                <span class="tooltip">4 730 080 entr&eacute;es<br/>
+                                                                                                            <a href="/v9_tophebdo.php?idsem=2796&view=2">
+                                                            2023<br/>Barbie<br/>
+                                                            <img src="cinema/images/posters/A-2023-16474-20230715122118.jpg" width="60" alt ="Barbie"/></a></span>
+                                                                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+                        <div class="espace1">&nbsp;</div>
+            <table class="tablesmall tablesmall5">
+                <tr>
+                    <td class="celluletitre">&nbsp;</td>
+                    <td colspan="2" class="celluletitre">Titre </td>
+                    <td class="celluletitre" width="6%">Sem.</td>
+                    <td class="celluletitre" width="12%">Entr&eacute;es</td>
+                    <td class="celluletitre" width="8%">Evol.</td>
+                    <td class="celluletitre" width="8%">
+                        Copies</td>
+                    <td class="celluletitre" width="8%">Moyenne</td>
+                    <td class="celluletitre" width="13%">Cumul</td>
+                                            <td class="celluletitre" width="6%">PDM</td>
+                    
+                </tr>
+                                    <tr>
+                        <td class="col_poster_compteur ">
+                                                            <div class="compteur"> 1 </div>
+                                                                <span style="margin: 10px; color:black">
+                                    <i class="fa-solid fa-caret-right fa-2x"></i>
+                                </span>
+                                                    </td>
+                        <td class="col_poster_image ">                                <img src="cinema/images/posters/A-2026-24330-20260711110650.jpg" />
+                            </td>
+                        <td class="col_poster_titre "><h3>
+                                                                    <a href="fichfilm.php?id=24330&view=2"> L'Odyssée (2026)</a>
+                                                            </h3>
+                            The Odyssey<br />                            <br />
+                            <br />
+                            (Universal)<br />                            Etats-Unis / Péplum / 2h52</td>
+                        <td class="col_poster_contenu_majeur ">2</td>
+                        <td class="col_poster_contenu_majeur ">
+                            1 618 366</td>
+                        <td class="col_poster_contenu_majeur ">
+                            <font color=red>-12.1%</font></td>
+                        <td class="col_poster_contenu_majeur ">
+                            758</td>
+                        <td class="col_poster_contenu_majeur ">
+                            2 135</td>
+                        <td class="col_poster_contenu_majeur ">
+                            3 459 431<br/></td>
+                                                    <td class="col_poster_contenu_majeur ">
+                                41,3 %</td>
+                                            </tr>
+                                        <tr>
+                        <td class="col_poster_compteur cellulejaune">
+                                                            <div class="compteur"> 2 </div>
+                                                                <span class="fa-layers fa-fw" style="color:gold; margin-top: 10px; margin-right: 10px;">
+                                    <i class="fa-solid fa-certificate fa-2x"></i>
+                                    <span class="fa-layers-text fa-inverse" data-fa-transform="shrink-3 right-5%" style="font-weight:900">N</span>
+                                </span>
+                                                    </td>
+                        <td class="col_poster_image cellulejaune">                                <img src="cinema/images/posters/A-2026-25424-20260627115158.jpg" />
+                            </td>
+                        <td class="col_poster_titre cellulejaune"><h3>
+                                                                    <a href="fichfilm.php?id=25424&view=2"> De la Comédie-Française</a>
+                                                            </h3>
+                                                        <br />
+                            <br />
+                            (Zinc)<br />                            France / Comédie / 1h15</td>
+                        <td class="col_poster_contenu_majeur cellulejaune">1</td>
+                        <td class="col_poster_contenu_majeur cellulejaune">
+                            359 703</td>
+                        <td class="col_poster_contenu_majeur cellulejaune">
+                            </td>
+                        <td class="col_poster_contenu_majeur cellulejaune">
+                            426</td>
+                        <td class="col_poster_contenu_majeur cellulejaune">
+                            844</td>
+                        <td class="col_poster_contenu_majeur cellulejaune">
+                            359 703<br/></td>
+                                                    <td class="col_poster_contenu_majeur cellulejaune">
+                                9,2 %</td>
+                                            </tr>
+                                        <tr>
+                        <td class="col_poster_compteur ">
+                                                            <div class="compteur"> 3 </div>
+                                                                <span class="fa-layers fa-fw" style="color:red; margin-top: 3px; margin-right: 12px;">
+                                    <i class="fa-solid fa-caret-down fa-4x"></i>
+                                    <span class="fa-layers-text fa-inverse" data-fa-transform="shrink-3 right-7%" style="font-weight:900">
+                                        -1</span>
+                                </span>
+                                                    </td>
+                        <td class="col_poster_image ">                                <img src="cinema/images/posters/A-2026-25091-20260703064500.jpg" />
+                            </td>
+                        <td class="col_poster_titre "><h3>
+                                                                    <a href="fichfilm.php?id=25091&view=2"> Vaiana, la légende du bout du monde (20.</a>
+                                                            </h3>
+                            Moana (2026)<br />                            <br />
+                            <br />
+                            (Walt Disney Pictures)<br />                            Etats-Unis / Film familial / 1h56</td>
+                        <td class="col_poster_contenu_majeur ">3</td>
+                        <td class="col_poster_contenu_majeur ">
+                            349 737</td>
+                        <td class="col_poster_contenu_majeur ">
+                            <font color=red>-22.2%</font></td>
+                        <td class="col_poster_contenu_majeur ">
+                            923<br/>(<font color=blue>+267</font>)</td>
+                        <td class="col_poster_contenu_majeur ">
+                            379</td>
+                        <td class="col_poster_contenu_majeur ">
+                            1 540 786<br/></td>
+                                                    <td class="col_poster_contenu_majeur ">
+                                8,9 %</td>
+                                            </tr>
+                                        <tr>
+                        <td class="col_poster_compteur ">
+                                                            <div class="compteur"> 4 </div>
+                                                                <span class="fa-layers fa-fw" style="color:red; margin-top: 3px; margin-right: 12px;">
+                                    <i class="fa-solid fa-caret-down fa-4x"></i>
+                                    <span class="fa-layers-text fa-inverse" data-fa-transform="shrink-3 right-7%" style="font-weight:900">
+                                        -1</span>
+                                </span>
+                                                    </td>
+                        <td class="col_poster_image ">                                <img src="cinema/images/posters/A-2026-25080-20251221050210.jpg" />
+                            </td>
+                        <td class="col_poster_titre "><h3>
+                                                                    <a href="fichfilm.php?id=25080&view=2"> Toy Story 5</a>
+                                                            </h3>
+                                                        <br />
+                            <br />
+                            (Walt Disney Pictures)<br />                            Etats-Unis / Animation / 1h42</td>
+                        <td class="col_poster_contenu_majeur ">6</td>
+                        <td class="col_poster_contenu_majeur ">
+                            281 371</td>
+                        <td class="col_poster_contenu_majeur ">
+                            <font color=red>-22.2%</font></td>
+                        <td class="col_poster_contenu_majeur ">
+                            1 240<br/>(<font color=red>-10</font>)</td>
+                        <td class="col_poster_contenu_majeur ">
+                            227</td>
+                        <td class="col_poster_contenu_majeur ">
+                            3 864 721<br/></td>
+                                                    <td class="col_poster_contenu_majeur ">
+                                7,2 %</td>
+                                            </tr>
+                                        <tr>
+                        <td class="col_poster_compteur ">
+                                                            <div class="compteur"> 5 </div>
+                                                                <span style="margin: 10px; color:black">
+                                    <i class="fa-solid fa-caret-right fa-2x"></i>
+                                </span>
+                                                    </td>
+                        <td class="col_poster_image ">                                <img src="cinema/images/posters/A-2026-25404-20260619061340.jpg" />
+                            </td>
+                        <td class="col_poster_titre "><h3>
+                                                                    <a href="fichfilm.php?id=25404&view=2"> La Bataille de Gaulle - J’écris ton nom.</a>
+                                                            </h3>
+                                                        <br />
+                            <br />
+                            (Pathé)<br />                            France / Aventure - Action / 2h39</td>
+                        <td class="col_poster_contenu_majeur ">5</td>
+                        <td class="col_poster_contenu_majeur ">
+                            255 272</td>
+                        <td class="col_poster_contenu_majeur ">
+                            <font color=red>-17.2%</font></td>
+                        <td class="col_poster_contenu_majeur ">
+                            915<br/>(<font color=blue>+45</font>)</td>
+                        <td class="col_poster_contenu_majeur ">
+                            279</td>
+                        <td class="col_poster_contenu_majeur ">
+                            1 745 625<br/></td>
+                                                    <td class="col_poster_contenu_majeur ">
+                                6,5 %</td>
+                                            </tr>
+                                        <tr>
+                        <td class="col_poster_compteur ">
+                                                            <div class="compteur"> 6 </div>
+                                                                <span class="fa-layers fa-fw" style="color:red; margin-top: 3px; margin-right: 12px;">
+                                    <i class="fa-solid fa-caret-down fa-4x"></i>
+                                    <span class="fa-layers-text fa-inverse" data-fa-transform="shrink-3 right-7%" style="font-weight:900">
+                                        -2</span>
+                                </span>
+                                                    </td>
+                        <td class="col_poster_image ">                                <img src="cinema/images/posters/A-2026-25236-20260322050847.jpg" />
+                            </td>
+                        <td class="col_poster_titre "><h3>
+                                                                    <a href="fichfilm.php?id=25236&view=2"> Des Minions et des monstres</a>
+                                                            </h3>
+                            Minions & Monsters<br />                            <br />
+                            <br />
+                            (Universal)<br />                            Etats-Unis / Animation / 1h29</td>
+                        <td class="col_poster_contenu_majeur ">5</td>
+                        <td class="col_poster_contenu_majeur ">
+                            234 609</td>
+                        <td class="col_poster_contenu_majeur ">
+                            <font color=red>-24.5%</font></td>
+                        <td class="col_poster_contenu_majeur ">
+                            1 188<br/>(<font color=blue>+394</font>)</td>
+                        <td class="col_poster_contenu_majeur ">
+                            197</td>
+                        <td class="col_poster_contenu_majeur ">
+                            2 473 877<br/></td>
+                                                    <td class="col_poster_contenu_majeur ">
+                                6,0 %</td>
+                                            </tr>
+                                        <tr>
+                        <td class="col_poster_compteur ">
+                                                            <div class="compteur"> 7 </div>
+                                                                <span class="fa-layers fa-fw" style="color:red; margin-top: 3px; margin-right: 12px;">
+                                    <i class="fa-solid fa-caret-down fa-4x"></i>
+                                    <span class="fa-layers-text fa-inverse" data-fa-transform="shrink-3 right-7%" style="font-weight:900">
+                                        -1</span>
+                                </span>
+                                                    </td>
+                        <td class="col_poster_image ">                                <img src="cinema/images/posters/A-2026-25403-20260530042646.jpg" />
+                            </td>
+                        <td class="col_poster_titre "><h3>
+                                                                    <a href="fichfilm.php?id=25403&view=2"> La Bataille de Gaulle - L’âge de fer</a>
+                                                            </h3>
+                                                        <br />
+                            <br />
+                            (Pathé)<br />                            France / Comédie dramatique / 2h40</td>
+                        <td class="col_poster_contenu_majeur ">8</td>
+                        <td class="col_poster_contenu_majeur ">
+                            174 792</td>
+                        <td class="col_poster_contenu_majeur ">
+                            <font color=red>-13.5%</font></td>
+                        <td class="col_poster_contenu_majeur ">
+                            698<br/>(<font color=red>-21</font>)</td>
+                        <td class="col_poster_contenu_majeur ">
+                            250</td>
+                        <td class="col_poster_contenu_majeur ">
+                            2 307 414<br/></td>
+                                                    <td class="col_poster_contenu_majeur ">
+                                4,5 %</td>
+                                            </tr>
+                                        <tr>
+                        <td class="col_poster_compteur cellulejaune">
+                                                            <div class="compteur"> 8 </div>
+                                                                <span class="fa-layers fa-fw" style="color:gold; margin-top: 10px; margin-right: 10px;">
+                                    <i class="fa-solid fa-certificate fa-2x"></i>
+                                    <span class="fa-layers-text fa-inverse" data-fa-transform="shrink-3 right-5%" style="font-weight:900">N</span>
+                                </span>
+                                                    </td>
+                        <td class="col_poster_image cellulejaune">                                <img src="cinema/images/posters/A-2025-24861-20260627120149.jpg" />
+                            </td>
+                        <td class="col_poster_titre cellulejaune"><h3>
+                                                                    <a href="fichfilm.php?id=24861&view=2"> Charlie et les kangourous</a>
+                                                            </h3>
+                            Kangaroo<br />                            <br />
+                            <br />
+                            (Studiocanal)<br />                            Australie / Film familial / 1h47</td>
+                        <td class="col_poster_contenu_majeur cellulejaune">1</td>
+                        <td class="col_poster_contenu_majeur cellulejaune">
+                            70 190</td>
+                        <td class="col_poster_contenu_majeur cellulejaune">
+                            </td>
+                        <td class="col_poster_contenu_majeur cellulejaune">
+                            440</td>
+                        <td class="col_poster_contenu_majeur cellulejaune">
+                            160</td>
+                        <td class="col_poster_contenu_majeur cellulejaune">
+                            70 190<br/></td>
+                                                    <td class="col_poster_contenu_majeur cellulejaune">
+                                1,8 %</td>
+                                            </tr>
+                                        <tr>
+                        <td class="col_poster_compteur ">
+                                                            <div class="compteur"> 9 </div>
+                                                                <span style="margin: 10px; color:black">
+                                    <i class="fa-solid fa-caret-right fa-2x"></i>
+                                </span>
+                                                    </td>
+                        <td class="col_poster_image ">                                <img src="cinema/images/posters/A-2026-25374-20260518105704.jpg" />
+                            </td>
+                        <td class="col_poster_titre "><h3>
+                                                                    <a href="fichfilm.php?id=25374&view=2"> Obsession (2026)</a>
+                                                            </h3>
+                                                        <br />
+                            <br />
+                            (Le Pacte)<br />                            Etats-Unis / Horreur / 1h48</td>
+                        <td class="col_poster_contenu_majeur ">11</td>
+                        <td class="col_poster_contenu_majeur ">
+                            66 134</td>
+                        <td class="col_poster_contenu_majeur ">
+                            <font color=red>-13%</font></td>
+                        <td class="col_poster_contenu_majeur ">
+                            285<br/>(<font color=red>-16</font>)</td>
+                        <td class="col_poster_contenu_majeur ">
+                            232</td>
+                        <td class="col_poster_contenu_majeur ">
+                            1 626 895<br/></td>
+                                                    <td class="col_poster_contenu_majeur ">
+                                1,7 %</td>
+                                            </tr>
+                                        <tr>
+                        <td class="col_poster_compteur ">
+                                                            <div class="compteur"> 10 </div>
+                                                                <span class="fa-layers fa-fw" style="color:red; margin-top: 3px; margin-right: 12px;">
+                                    <i class="fa-solid fa-caret-down fa-4x"></i>
+                                    <span class="fa-layers-text fa-inverse" data-fa-transform="shrink-3 right-7%" style="font-weight:900">
+                                        -2</span>
+                                </span>
+                                                    </td>
+                        <td class="col_poster_image ">                                <img src="cinema/images/posters/A-2026-25368-20260703064924.jpg" />
+                            </td>
+                        <td class="col_poster_titre "><h3>
+                                                                    <a href="fichfilm.php?id=25368&view=2"> Evil Dead Burn</a>
+                                                            </h3>
+                                                        <br />
+                            <br />
+                            (Metropolitan)<br />                            Etats-Unis / Horreur / 1h51</td>
+                        <td class="col_poster_contenu_majeur ">3</td>
+                        <td class="col_poster_contenu_majeur ">
+                            51 637</td>
+                        <td class="col_poster_contenu_majeur ">
+                            <font color=red>-32.8%</font></td>
+                        <td class="col_poster_contenu_majeur ">
+                            342<br/>(<font color=blue>+43</font>)</td>
+                        <td class="col_poster_contenu_majeur ">
+                            151</td>
+                        <td class="col_poster_contenu_majeur ">
+                            260 021<br/></td>
+                                                    <td class="col_poster_contenu_majeur ">
+                                1,3 %</td>
+                                            </tr>
+                                        <tr>
+                        <td class="col_poster_compteur cellulejaune">
+                                                            <div class="compteur"> 11 </div>
+                                                                <span class="fa-layers fa-fw" style="color:gold; margin-top: 10px; margin-right: 10px;">
+                                    <i class="fa-solid fa-certificate fa-2x"></i>
+                                    <span class="fa-layers-text fa-inverse" data-fa-transform="shrink-3 right-5%" style="font-weight:900">N</span>
+                                </span>
+                                                    </td>
+                        <td class="col_poster_image cellulejaune">                                <img src="cinema/images/posters/nophoto.jpg" />
+                            </td>
+                        <td class="col_poster_titre cellulejaune"><h3>
+                                Les Vacances de Golo & Ritchie                            </h3>
+                                                        <br />
+                            <br />
+                                                        </td>
+                        <td class="col_poster_contenu_majeur cellulejaune">1</td>
+                        <td class="col_poster_contenu_majeur cellulejaune">
+                            51 587</td>
+                        <td class="col_poster_contenu_majeur cellulejaune">
+                            </td>
+                        <td class="col_poster_contenu_majeur cellulejaune">
+                            249</td>
+                        <td class="col_poster_contenu_majeur cellulejaune">
+                            207</td>
+                        <td class="col_poster_contenu_majeur cellulejaune">
+                            51 587<br/></td>
+                                                    <td class="col_poster_contenu_majeur cellulejaune">
+                                1,3 %</td>
+                                            </tr>
+                                        <tr>
+                        <td class="col_poster_compteur ">
+                                                            <div class="compteur"> 12 </div>
+                                                                <span class="fa-layers fa-fw" style="color:red; margin-top: 3px; margin-right: 12px;">
+                                    <i class="fa-solid fa-caret-down fa-4x"></i>
+                                    <span class="fa-layers-text fa-inverse" data-fa-transform="shrink-3 right-7%" style="font-weight:900">
+                                        -5</span>
+                                </span>
+                                                    </td>
+                        <td class="col_poster_image ">                                <img src="cinema/images/posters/A-2026-25327-20260417043802.jpg" />
+                            </td>
+                        <td class="col_poster_titre "><h3>
+                                                                    <a href="fichfilm.php?id=25327&view=2"> Backrooms</a>
+                                                            </h3>
+                                                        <br />
+                            <br />
+                            (Metropolitan)<br />                            Etats-Unis / Horreur / 1h50</td>
+                        <td class="col_poster_contenu_majeur ">6</td>
+                        <td class="col_poster_contenu_majeur ">
+                            48 776</td>
+                        <td class="col_poster_contenu_majeur ">
+                            <font color=red>-41.3%</font></td>
+                        <td class="col_poster_contenu_majeur ">
+                            455<br/>(<font color=red>-135</font>)</td>
+                        <td class="col_poster_contenu_majeur ">
+                            107</td>
+                        <td class="col_poster_contenu_majeur ">
+                            1 370 185<br/></td>
+                                                    <td class="col_poster_contenu_majeur ">
+                                1,2 %</td>
+                                            </tr>
+                                        <tr>
+                        <td class="col_poster_compteur cellulejaune">
+                                                            <div class="compteur"> 13 </div>
+                                                                <span class="fa-layers fa-fw" style="color:gold; margin-top: 10px; margin-right: 10px;">
+                                    <i class="fa-solid fa-certificate fa-2x"></i>
+                                    <span class="fa-layers-text fa-inverse" data-fa-transform="shrink-3 right-5%" style="font-weight:900">N</span>
+                                </span>
+                                                    </td>
+                        <td class="col_poster_image cellulejaune">                                <img src="cinema/images/posters/A-2026-25455-20260718084115.jpg" />
+                            </td>
+                        <td class="col_poster_titre cellulejaune"><h3>
+                                                                    <a href="fichfilm.php?id=25455&view=2"> La Fille dans les nuages</a>
+                                                            </h3>
+                                                        <br />
+                            <br />
+                            (Pan-Européenne)<br />                            France / Animation / 1h28</td>
+                        <td class="col_poster_contenu_majeur cellulejaune">1</td>
+                        <td class="col_poster_contenu_majeur cellulejaune">
+                            38 610</td>
+                        <td class="col_poster_contenu_majeur cellulejaune">
+                            </td>
+                        <td class="col_poster_contenu_majeur cellulejaune">
+                            240</td>
+                        <td class="col_poster_contenu_majeur cellulejaune">
+                            161</td>
+                        <td class="col_poster_contenu_majeur cellulejaune">
+                            38 610<br/></td>
+                                                    <td class="col_poster_contenu_majeur cellulejaune">
+                                1,0 %</td>
+                                            </tr>
+                                        <tr>
+                        <td class="col_poster_compteur ">
+                                                            <div class="compteur"> 14 </div>
+                                                                <span class="fa-layers fa-fw" style="color:red; margin-top: 3px; margin-right: 12px;">
+                                    <i class="fa-solid fa-caret-down fa-4x"></i>
+                                    <span class="fa-layers-text fa-inverse" data-fa-transform="shrink-3 right-7%" style="font-weight:900">
+                                        -4</span>
+                                </span>
+                                                    </td>
+                        <td class="col_poster_image ">                                <img src="cinema/images/posters/A-2026-25079-20260626070031.jpg" />
+                            </td>
+                        <td class="col_poster_titre "><h3>
+                                                                    <a href="fichfilm.php?id=25079&view=2"> Supergirl (2026)</a>
+                                                            </h3>
+                                                        <br />
+                            <br />
+                            (Warner Bros.)<br />                            Etats-Unis / Comicbook / 1h50</td>
+                        <td class="col_poster_contenu_majeur ">4</td>
+                        <td class="col_poster_contenu_majeur ">
+                            28 385</td>
+                        <td class="col_poster_contenu_majeur ">
+                            <font color=red>-46.1%</font></td>
+                        <td class="col_poster_contenu_majeur ">
+                            715<br/>(<font color=blue>+39</font>)</td>
+                        <td class="col_poster_contenu_majeur ">
+                            40</td>
+                        <td class="col_poster_contenu_majeur ">
+                            450 778<br/></td>
+                                                    <td class="col_poster_contenu_majeur ">
+                                0,7 %</td>
+                                            </tr>
+                                        <tr>
+                        <td class="col_poster_compteur ">
+                                                            <div class="compteur"> 15 </div>
+                                                                <span class="fa-layers fa-fw" style="color:red; margin-top: 3px; margin-right: 12px;">
+                                    <i class="fa-solid fa-caret-down fa-4x"></i>
+                                    <span class="fa-layers-text fa-inverse" data-fa-transform="shrink-3 right-7%" style="font-weight:900">
+                                        -4</span>
+                                </span>
+                                                    </td>
+                        <td class="col_poster_image ">                                <img src="cinema/images/posters/A-2026-25422-20260626070253.jpg" />
+                            </td>
+                        <td class="col_poster_titre "><h3>
+                                                                    <a href="fichfilm.php?id=25422&view=2"> Permis de détruire</a>
+                                                            </h3>
+                                                        <br />
+                            <br />
+                            (Pan-Européenne)<br />                            France / Comédie / 1h37</td>
+                        <td class="col_poster_contenu_majeur ">4</td>
+                        <td class="col_poster_contenu_majeur ">
+                            26 179</td>
+                        <td class="col_poster_contenu_majeur ">
+                            <font color=red>-32.6%</font></td>
+                        <td class="col_poster_contenu_majeur ">
+                            450<br/>(<font color=blue>+21</font>)</td>
+                        <td class="col_poster_contenu_majeur ">
+                            58</td>
+                        <td class="col_poster_contenu_majeur ">
+                            259 987<br/></td>
+                                                    <td class="col_poster_contenu_majeur ">
+                                0,7 %</td>
+                                            </tr>
+                                        <tr>
+                        <td class="col_poster_compteur ">
+                                                            <div class="compteur"> 16 </div>
+                                                                <span class="fa-layers fa-fw" style="color:red; margin-top: 3px; margin-right: 12px;">
+                                    <i class="fa-solid fa-caret-down fa-4x"></i>
+                                    <span class="fa-layers-text fa-inverse" data-fa-transform="shrink-3 right-7%" style="font-weight:900">
+                                        -4</span>
+                                </span>
+                                                    </td>
+                        <td class="col_poster_image ">                                <img src="cinema/images/posters/A-2026-25430-20260627113448.jpg" />
+                            </td>
+                        <td class="col_poster_titre "><h3>
+                                                                    <a href="fichfilm.php?id=25430&view=2"> Jim Queen</a>
+                                                            </h3>
+                                                        <br />
+                            <br />
+                            (The Jokers / Les Bookmakers)<br />                            France / Animation / 1h25</td>
+                        <td class="col_poster_contenu_majeur ">6</td>
+                        <td class="col_poster_contenu_majeur ">
+                            21 667</td>
+                        <td class="col_poster_contenu_majeur ">
+                            <font color=red>-33.6%</font></td>
+                        <td class="col_poster_contenu_majeur ">
+                            216<br/>(<font color=red>-85</font>)</td>
+                        <td class="col_poster_contenu_majeur ">
+                            100</td>
+                        <td class="col_poster_contenu_majeur ">
+                            332 479<br/></td>
+                                                    <td class="col_poster_contenu_majeur ">
+                                0,6 %</td>
+                                            </tr>
+                                        <tr>
+                        <td class="col_poster_compteur cellulejaune">
+                                                            <div class="compteur"> 17 </div>
+                                                                <span class="fa-layers fa-fw" style="color:gold; margin-top: 10px; margin-right: 10px;">
+                                    <i class="fa-solid fa-certificate fa-2x"></i>
+                                    <span class="fa-layers-text fa-inverse" data-fa-transform="shrink-3 right-5%" style="font-weight:900">N</span>
+                                </span>
+                                                    </td>
+                        <td class="col_poster_image cellulejaune">                                <img src="cinema/images/posters/nophoto.jpg" />
+                            </td>
+                        <td class="col_poster_titre cellulejaune"><h3>
+                                Kyo no Sora ga Ichiban Suki, to Mada Ie.                            </h3>
+                                                        <br />
+                            <br />
+                                                        </td>
+                        <td class="col_poster_contenu_majeur cellulejaune">1</td>
+                        <td class="col_poster_contenu_majeur cellulejaune">
+                            19 064</td>
+                        <td class="col_poster_contenu_majeur cellulejaune">
+                            </td>
+                        <td class="col_poster_contenu_majeur cellulejaune">
+                            80</td>
+                        <td class="col_poster_contenu_majeur cellulejaune">
+                            238</td>
+                        <td class="col_poster_contenu_majeur cellulejaune">
+                            19 064<br/></td>
+                                                    <td class="col_poster_contenu_majeur cellulejaune">
+                                0,5 %</td>
+                                            </tr>
+                                        <tr>
+                        <td class="col_poster_compteur ">
+                                                            <div class="compteur"> 18 </div>
+                                                                <span class="fa-layers fa-fw" style="color:red; margin-top: 3px; margin-right: 12px;">
+                                    <i class="fa-solid fa-caret-down fa-4x"></i>
+                                    <span class="fa-layers-text fa-inverse" data-fa-transform="shrink-3 right-7%" style="font-weight:900">
+                                        -4</span>
+                                </span>
+                                                    </td>
+                        <td class="col_poster_image ">                                <img src="cinema/images/posters/A-2026-25449-20260711114007.jpg" />
+                            </td>
+                        <td class="col_poster_titre "><h3>
+                                                                    <a href="fichfilm.php?id=25449&view=2"> In Waves</a>
+                                                            </h3>
+                                                        <br />
+                            <br />
+                            (Diaphana)<br />                            France / Animation / 1h31</td>
+                        <td class="col_poster_contenu_majeur ">4</td>
+                        <td class="col_poster_contenu_majeur ">
+                            18 516</td>
+                        <td class="col_poster_contenu_majeur ">
+                            <font color=red>-31.6%</font></td>
+                        <td class="col_poster_contenu_majeur ">
+                            367<br/>(<font color=blue>+2</font>)</td>
+                        <td class="col_poster_contenu_majeur ">
+                            50</td>
+                        <td class="col_poster_contenu_majeur ">
+                            135 577<br/></td>
+                                                    <td class="col_poster_contenu_majeur ">
+                                0,5 %</td>
+                                            </tr>
+                                        <tr>
+                        <td class="col_poster_compteur cellulejaune">
+                                                            <div class="compteur"> 19 </div>
+                                                                <span class="fa-layers fa-fw" style="color:gold; margin-top: 10px; margin-right: 10px;">
+                                    <i class="fa-solid fa-certificate fa-2x"></i>
+                                    <span class="fa-layers-text fa-inverse" data-fa-transform="shrink-3 right-5%" style="font-weight:900">N</span>
+                                </span>
+                                                    </td>
+                        <td class="col_poster_image cellulejaune">                                <img src="cinema/images/posters/nophoto.jpg" />
+                            </td>
+                        <td class="col_poster_titre cellulejaune"><h3>
+                                Omaha                            </h3>
+                                                        <br />
+                            <br />
+                                                        </td>
+                        <td class="col_poster_contenu_majeur cellulejaune">1</td>
+                        <td class="col_poster_contenu_majeur cellulejaune">
+                            17 790</td>
+                        <td class="col_poster_contenu_majeur cellulejaune">
+                            </td>
+                        <td class="col_poster_contenu_majeur cellulejaune">
+                            98</td>
+                        <td class="col_poster_contenu_majeur cellulejaune">
+                            182</td>
+                        <td class="col_poster_contenu_majeur cellulejaune">
+                            17 790<br/></td>
+                                                    <td class="col_poster_contenu_majeur cellulejaune">
+                                0,5 %</td>
+                                            </tr>
+                                        <tr>
+                        <td class="col_poster_compteur ">
+                                                            <div class="compteur"> 20 </div>
+                                                                <span class="fa-layers fa-fw" style="color:red; margin-top: 3px; margin-right: 12px;">
+                                    <i class="fa-solid fa-caret-down fa-4x"></i>
+                                    <span class="fa-layers-text fa-inverse" data-fa-transform="shrink-3 right-7%" style="font-weight:900">
+                                        -4</span>
+                                </span>
+                                                    </td>
+                        <td class="col_poster_image ">                                <img src="cinema/images/posters/A-2025-25072-20260711110751.jpg" />
+                            </td>
+                        <td class="col_poster_titre "><h3>
+                                                                    <a href="fichfilm.php?id=25072&view=2"> The Last Viking</a>
+                                                            </h3>
+                            Den Sidste Viking<br />                            <br />
+                            <br />
+                                                        Danemark / Comédie dramatique / 1h56</td>
+                        <td class="col_poster_contenu_majeur ">2</td>
+                        <td class="col_poster_contenu_majeur ">
+                            16 733</td>
+                        <td class="col_poster_contenu_majeur ">
+                            <font color=red>-37.2%</font></td>
+                        <td class="col_poster_contenu_majeur ">
+                            119<br/>(<font color=blue>+18</font>)</td>
+                        <td class="col_poster_contenu_majeur ">
+                            141</td>
+                        <td class="col_poster_contenu_majeur ">
+                            43 393<br/></td>
+                                                    <td class="col_poster_contenu_majeur ">
+                                0,4 %</td>
+                                            </tr>
+                                        <tr>
+                        <td class="col_poster_compteur cellulejaune">
+                                                            <span class="fa-layers fa-fw" style="color:gold; margin-top: 10px; margin-right: 10px;">
+                                    <i class="fa-solid fa-certificate fa-2x"></i>
+                                    <span class="fa-layers-text fa-inverse" data-fa-transform="shrink-3 right-5%" style="font-weight:900">N</span>
+                                </span>
+                                                    </td>
+                        <td class="col_poster_image cellulejaune">                                <img src="cinema/images/posters/A-2026-25456-20260718084232.jpg" />
+                            </td>
+                        <td class="col_poster_titre cellulejaune"><h3>
+                                                                    <a href="fichfilm.php?id=25456&view=2"> Cap Farewell</a>
+                                                            </h3>
+                                                        <br />
+                            <br />
+                                                        Belgique / Drame / 1h48</td>
+                        <td class="col_poster_contenu_majeur cellulejaune">1</td>
+                        <td class="col_poster_contenu_majeur cellulejaune">
+                            1 232</td>
+                        <td class="col_poster_contenu_majeur cellulejaune">
+                            </td>
+                        <td class="col_poster_contenu_majeur cellulejaune">
+                            28</td>
+                        <td class="col_poster_contenu_majeur cellulejaune">
+                            44</td>
+                        <td class="col_poster_contenu_majeur cellulejaune">
+                            1 232<br/></td>
+                                                    <td class="col_poster_contenu_majeur cellulejaune">
+                                0,0 %</td>
+                                            </tr>
+                                </table>
+            <div class="bloc_infos_center tablesmall1">Sources: CBO-BoxOffice</div>
+        </div>
+        <div class="bloclarge2">JP Box-Office (Depuis Juillet 1998)<br />
+    Version 9.2.3<br /><br />
+25 574 films r&eacute;f&eacute;renc&eacute;s - 1 015 filmographies - 1 443 membres</div>
+    </body>
+</html>

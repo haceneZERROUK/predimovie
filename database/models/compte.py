@@ -1,0 +1,37 @@
+import enum
+from datetime import date, datetime
+
+from sqlalchemy import Boolean, Date, DateTime, Enum, String
+from sqlalchemy.orm import Mapped, mapped_column
+
+from database.base import Base
+
+
+class RoleCompte(enum.StrEnum):
+    """Les deux rôles possibles pour un compte : soit un exploitant de
+    cinéma (qui consulte les prédictions pour son propre cinéma), soit
+    l'administrateur du projet (accès complet)."""
+
+    CINEMA = "cinema"
+    ADMIN = "admin"
+
+
+class Compte(Base):
+    """Un compte de connexion à l'application Django.
+
+    Choix de conception : un compte = un cinéma (pas de table `cinema`
+    séparée). Les colonnes `nom_cinema`/`adresse` ne sont donc renseignées
+    que pour les comptes de rôle CINEMA ; elles restent vides (nullable)
+    pour le compte ADMIN.
+    """
+
+    __tablename__ = "compte"
+
+    id_compte: Mapped[int] = mapped_column(primary_key=True)
+    mail: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
+    mot_de_passe: Mapped[str] = mapped_column(String(255), nullable=False)
+    role: Mapped[RoleCompte] = mapped_column(Enum(RoleCompte), nullable=False)
+    nom_cinema: Mapped[str] = mapped_column(String(255), nullable=True)
+    date_inscription: Mapped[date] = mapped_column(Date, nullable=False)
+    derniere_connexion: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+    statut_compte: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)

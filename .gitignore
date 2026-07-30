@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Env
+.env
+.env.*
+!.env.example
+
+# Django
+frontend_django/**/migrations/*.py
+!frontend_django/**/migrations/__init__.py
+frontend_django/db.sqlite3
+frontend_django/staticfiles/
+
+# MLflow
+mlruns/
+mlartifacts/
+
+# Data
+ml-latest/
+*.csv
+!data_engineering/**/sample_*.csv
+
+# N8n
+data_engineering/n8n_workflows/.n8n/
+
+# Grafana
+monitoring/grafana/data/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+
+# Claude Code (local, machine-specific permissions)
+.claude/settings.local.json*

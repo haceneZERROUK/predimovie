@@ -1,0 +1,64 @@
+[project]
+name = "predimovie"
+version = "0.1.0"
+description = "Système de recommandation de films (certification Simplon) : ETL N8n, PostgreSQL, FastAPI + Scikit-Learn/MLflow, PoC Streamlit, front Django."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+    "sqlalchemy>=2.0",
+    "alembic>=1.13",
+    "psycopg2-binary>=2.9",
+    "pydantic>=2.9",
+    "pydantic-settings>=2.5",
+    "python-dotenv>=1.0",
+    "httpx>=0.27",
+    "pandas>=2.2",
+    "scikit-learn>=1.5",
+    "mlflow>=2.16",
+    "joblib>=1.4",
+    "streamlit>=1.38",
+    "django>=5.1",
+    "beautifulsoup4>=4.15.0",
+    "lxml>=6.1.1",
+    "rapidfuzz>=3.14.5",
+]
+
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.6",
+    "black>=24.8",
+    "pytest>=8.3",
+    "pytest-cov>=5.0",
+    "pre-commit>=3.8",
+    "python-semantic-release>=9.8",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["backend/app", "database", "data_engineering", "ml"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = ["frontend_django/*/migrations", "database/alembic/versions"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.black]
+line-length = 100
+target-version = ["py311"]
+extend-exclude = "(frontend_django/.*/migrations|database/alembic/versions)"
+
+[tool.pytest.ini_options]
+testpaths = ["backend/tests", "database/tests", "data_engineering/tests"]
+
+[tool.semantic_release]
+version_variables = ["pyproject.toml:project.version"]
+branch = "main"
+build_command = false
