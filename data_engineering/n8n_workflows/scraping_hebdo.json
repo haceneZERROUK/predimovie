@@ -1,0 +1,152 @@
+{
+  "name": "Predimovie - Scraping hebdo + mots-cles",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{ "field": "weeks", "weeksInterval": 1 }]
+        }
+      },
+      "id": "trigger-1",
+      "name": "Toutes les semaines",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://scraper:8001/scrape/upcoming",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "id": "http-upcoming",
+      "name": "Scraper films a venir",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [250, 0],
+      "credentials": {
+        "httpHeaderAuth": { "name": "Predimovie Scraper API" }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// jpbox numerote les semaines depuis janvier 1970, ca avance de 1 par semaine\n// du coup on calcule le numero de la semaine en cours pour recuperer le bon classement\nconst epoque = new Date('1970-01-05T00:00:00Z');\nconst maintenant = new Date();\nconst nbSemaines = (maintenant - epoque) / (1000 * 60 * 60 * 24 * 7);\nconst idsem = Math.round(nbSemaines + 1.714);\nreturn { idsem };"
+      },
+      "id": "code-idsem",
+      "name": "Calculer la semaine",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [500, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://scraper:8001/scrape/entrees?idsem={{ $json.idsem }}&vue=2",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "id": "http-entrees",
+      "name": "Scraper entrees semaine",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [750, 0],
+      "credentials": {
+        "httpHeaderAuth": { "name": "Predimovie Scraper API" }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT id_oeuvre, synopsis FROM oeuvre WHERE synopsis IS NOT NULL AND length(synopsis) > 50 AND mot_cle_1 IS NULL;"
+      },
+      "id": "postgres-select",
+      "name": "Recuperer synopsis",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [1000, 0],
+      "credentials": {
+        "postgres": { "name": "Predimovie Postgres" }
+      }
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-oss-20b"
+      },
+      "id": "groq-model",
+      "name": "Groq Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [1250, 200],
+      "credentials": {
+        "groqApi": { "name": "Groq account" }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Voici le synopsis d'un film :\n\n{{ $json.synopsis }}\n\nReponds uniquement avec exactement 3 mots-cles qui resument ce film, en francais, separes par des virgules. Pas de phrase, pas d'introduction, juste les 3 mots-cles."
+      },
+      "id": "llm-chain",
+      "name": "Extraire mots-cles",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.5,
+      "position": [1250, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const motsCles = $input.item.json.text.split(',').map(m => m.trim()).slice(0, 3);\nreturn {\n  id_oeuvre: $('Recuperer synopsis').item.json.id_oeuvre,\n  mot_cle_1: motsCles[0] || null,\n  mot_cle_2: motsCles[1] || null,\n  mot_cle_3: motsCles[2] || null,\n};"
+      },
+      "id": "code-decoupe",
+      "name": "Decouper la reponse",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1500, 0]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE oeuvre SET mot_cle_1 = $1, mot_cle_2 = $2, mot_cle_3 = $3 WHERE id_oeuvre = $4;",
+        "options": {
+          "queryReplacement": "={{ $json.mot_cle_1 }},{{ $json.mot_cle_2 }},{{ $json.mot_cle_3 }},{{ $json.id_oeuvre }}"
+        }
+      },
+      "id": "postgres-update",
+      "name": "Enregistrer les mots-cles",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [1750, 0],
+      "credentials": {
+        "postgres": { "name": "Predimovie Postgres" }
+      }
+    }
+  ],
+  "connections": {
+    "Toutes les semaines": {
+      "main": [[{ "node": "Scraper films a venir", "type": "main", "index": 0 }]]
+    },
+    "Scraper films a venir": {
+      "main": [[{ "node": "Calculer la semaine", "type": "main", "index": 0 }]]
+    },
+    "Calculer la semaine": {
+      "main": [[{ "node": "Scraper entrees semaine", "type": "main", "index": 0 }]]
+    },
+    "Scraper entrees semaine": {
+      "main": [[{ "node": "Recuperer synopsis", "type": "main", "index": 0 }]]
+    },
+    "Recuperer synopsis": {
+      "main": [[{ "node": "Extraire mots-cles", "type": "main", "index": 0 }]]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [{ "node": "Extraire mots-cles", "type": "ai_languageModel", "index": 0 }]
+      ]
+    },
+    "Extraire mots-cles": {
+      "main": [[{ "node": "Decouper la reponse", "type": "main", "index": 0 }]]
+    },
+    "Decouper la reponse": {
+      "main": [[{ "node": "Enregistrer les mots-cles", "type": "main", "index": 0 }]]
+    }
+  }
+}

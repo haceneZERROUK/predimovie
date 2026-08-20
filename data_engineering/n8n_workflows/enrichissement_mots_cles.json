@@ -1,0 +1,121 @@
+{
+  "name": "Predimovie - Enrichissement mots-cles",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{ "field": "weeks", "weeksInterval": 1 }]
+        }
+      },
+      "id": "trigger-1",
+      "name": "Toutes les semaines",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT id_oeuvre, synopsis FROM oeuvre WHERE synopsis IS NOT NULL AND length(synopsis) > 50 AND mot_cle_1 IS NULL;"
+      },
+      "id": "postgres-select",
+      "name": "Recuperer synopsis",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [250, 0],
+      "credentials": {
+        "postgres": { "name": "Predimovie Postgres" }
+      }
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "loop-items",
+      "name": "Boucle un film a la fois",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [500, 0]
+    },
+    {
+      "parameters": {
+        "model": "claude-haiku-4-5-20251001"
+      },
+      "id": "anthropic-model",
+      "name": "Anthropic Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1,
+      "position": [1000, 300],
+      "credentials": {
+        "anthropicApi": { "name": "Anthropic account" }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Voici le synopsis d'un film :\n\n{{ $json.synopsis }}\n\nReponds uniquement avec exactement 3 mots-cles qui resument ce film, en francais, separes par des virgules. Pas de phrase, pas d'introduction, juste les 3 mots-cles."
+      },
+      "id": "llm-chain",
+      "name": "Extraire mots-cles",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.5,
+      "position": [1000, 100]
+    },
+    {
+      "parameters": {
+        "jsCode": "const motsCles = $input.item.json.text.split(',').map(m => m.trim()).slice(0, 3);\nreturn {\n  id_oeuvre: $('Recuperer synopsis').item.json.id_oeuvre,\n  mot_cle_1: motsCles[0] || null,\n  mot_cle_2: motsCles[1] || null,\n  mot_cle_3: motsCles[2] || null,\n};"
+      },
+      "id": "code-decoupe",
+      "name": "Decouper la reponse",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1250, 100]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE oeuvre SET mot_cle_1 = $1, mot_cle_2 = $2, mot_cle_3 = $3 WHERE id_oeuvre = $4;",
+        "options": {
+          "queryReplacement": "={{ $json.mot_cle_1 }},{{ $json.mot_cle_2 }},{{ $json.mot_cle_3 }},{{ $json.id_oeuvre }}"
+        }
+      },
+      "id": "postgres-update",
+      "name": "Enregistrer les mots-cles",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [1500, 100],
+      "credentials": {
+        "postgres": { "name": "Predimovie Postgres" }
+      }
+    }
+  ],
+  "connections": {
+    "Toutes les semaines": {
+      "main": [[{ "node": "Recuperer synopsis", "type": "main", "index": 0 }]]
+    },
+    "Recuperer synopsis": {
+      "main": [[{ "node": "Boucle un film a la fois", "type": "main", "index": 0 }]]
+    },
+    "Boucle un film a la fois": {
+      "main": [
+        [],
+        [{ "node": "Extraire mots-cles", "type": "main", "index": 0 }]
+      ]
+    },
+    "Anthropic Chat Model": {
+      "ai_languageModel": [
+        [{ "node": "Extraire mots-cles", "type": "ai_languageModel", "index": 0 }]
+      ]
+    },
+    "Extraire mots-cles": {
+      "main": [[{ "node": "Decouper la reponse", "type": "main", "index": 0 }]]
+    },
+    "Decouper la reponse": {
+      "main": [[{ "node": "Enregistrer les mots-cles", "type": "main", "index": 0 }]]
+    },
+    "Enregistrer les mots-cles": {
+      "main": [[{ "node": "Boucle un film a la fois", "type": "main", "index": 0 }]]
+    }
+  }
+}

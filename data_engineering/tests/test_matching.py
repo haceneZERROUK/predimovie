@@ -1,6 +1,11 @@
 # Tests du module matching.py : pas besoin de réseau, on teste juste
 # la logique de comparaison de titres.
-from data_engineering.matching import meme_film, normaliser_titre, se_ressemblent
+from data_engineering.matching import (
+    meme_film,
+    nettoyer_annotations,
+    normaliser_titre,
+    se_ressemblent,
+)
 
 
 def test_normaliser_titre_enleve_accents_et_ponctuation():
@@ -37,3 +42,18 @@ def test_meme_film_refuse_annee_trop_eloignee():
 def test_meme_film_refuse_titre_different():
     resultat_tmdb = {"title": "Interstellar", "release_date": "2021-09-15"}
     assert meme_film("Dune", 2021, resultat_tmdb) is False
+
+
+def test_nettoyer_annotations_enleve_reprise():
+    assert nettoyer_annotations("Ghost in the Shell (Rep. 2026)") == "Ghost in the Shell"
+
+
+def test_nettoyer_annotations_laisse_titre_normal():
+    assert nettoyer_annotations("Dune") == "Dune"
+
+
+def test_meme_film_ignore_annotation_jpbox():
+    # "(Rep. 2026)" est une mention JPBOX de reprise, pas un vrai titre :
+    # sans nettoyage, le score de ressemblance tombe sous le seuil.
+    resultat_tmdb = {"title": "Ghost in the Shell", "release_date": "1995-11-18"}
+    assert meme_film("Ghost in the Shell (Rep. 2026)", None, resultat_tmdb) is True

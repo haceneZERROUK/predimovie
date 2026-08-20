@@ -17,3 +17,7 @@ JPBOX_VUE_INTERNATIONAL = 5
 # on s'identifie clairement et on attend un peu entre 2 requêtes.
 JPBOX_USER_AGENT = "PredimovieBot/1.0 (projet etudiant, usage academique)"
 JPBOX_DELAI_ENTRE_REQUETES = 1.5  # secondes
+
+# Clé partagée avec N8n pour protéger les routes /scrape/* : pas de vrais
+# utilisateurs ici (pas besoin de JWT), juste un secret à connaître.
+SCRAPER_API_KEY = os.environ.get("SCRAPER_API_KEY", "")

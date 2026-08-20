@@ -1,4 +1,4 @@
-from sqlalchemy import Date, ForeignKey, String
+from sqlalchemy import Date, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database.base import Base
@@ -32,7 +32,9 @@ class ActeurOeuvre(Base):
     # ForeignKey("acteur.id_acteur") : pointe vers la colonne id_acteur de la table acteur.
     id_acteur: Mapped[int] = mapped_column(ForeignKey("acteur.id_acteur"), primary_key=True)
     id_oeuvre: Mapped[int] = mapped_column(ForeignKey("oeuvre.id_oeuvre"), primary_key=True)
-    role: Mapped[str] = mapped_column(String(255), nullable=True)
+    # Text plutôt que String(255) : certains doubleurs jouent beaucoup de
+    # personnages (dessins animés), le nom du rôle peut dépasser 255 caractères.
+    role: Mapped[str] = mapped_column(Text, nullable=True)
 
     # `relationship` ne crée pas de colonne en BDD : ça permet juste,
     # en Python, d'écrire `mon_association.acteur` pour récupérer l'objet

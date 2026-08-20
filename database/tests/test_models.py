@@ -24,6 +24,8 @@ def test_oeuvre_with_nature_genre_acteur(db_session):
         nom_francais="Dune",
         nom_original="Dune",
         annee_sortie=2021,
+        note_tmdb=7.8,
+        note_imdb=8.0,
         mot_cle_1="désert",
         mot_cle_2="prophétie",
         mot_cle_3="empire",
@@ -45,6 +47,8 @@ def test_oeuvre_with_nature_genre_acteur(db_session):
     assert oeuvre.id_oeuvre is not None  # un id a été généré par la BDD
     assert oeuvre.nature.nom_nature == "Film"
     assert oeuvre.entrees_premiere_semaine == 1_200_000
+    assert oeuvre.note_tmdb == 7.8
+    assert oeuvre.note_imdb == 8.0
     assert oeuvre.mot_cle_1 == "désert"
     assert oeuvre.genres_assoc[0].genre.nom_genre == "Science-fiction"
     assert oeuvre.acteurs_assoc[0].role == "Paul Atreides"

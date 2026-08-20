@@ -42,3 +42,6 @@ monitoring/grafana/data/
 
 # Claude Code (local, machine-specific permissions)
 .claude/settings.local.json*
+
+# Comptes-rendus de travail (notes locales, pas destinées au dépôt)
+explication/

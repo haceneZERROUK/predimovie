@@ -1,6 +1,7 @@
 # Ce module sert à vérifier si un film trouvé sur JPBOX et un film trouvé
 # sur TMDB sont bien LE MEME film, alors que les titres ne sont parfois
 # pas écrits pareil d'une source à l'autre (accents, articles, ponctuation).
+import re
 import unicodedata
 
 from rapidfuzz import fuzz
@@ -8,6 +9,14 @@ from rapidfuzz import fuzz
 # Petits mots en début de titre qu'on ignore pour mieux comparer.
 # "l " correspond à "l'" une fois l'apostrophe transformée en espace.
 ARTICLES = ("le ", "la ", "les ", "l ", "the ", "a ", "an ")
+
+
+def nettoyer_annotations(titre: str) -> str:
+    """Enlève une annotation JPBOX en fin de titre, ex: "(Rep. 2026)" pour
+    une reprise en salle. jpbox.py a déjà retiré les parenthèses qui
+    contiennent juste une année ; celles qui restent ne font que polluer
+    la recherche et la comparaison TMDB."""
+    return re.sub(r"\s*\([^)]*\)\s*$", "", titre).strip()
 
 
 def normaliser_titre(titre: str) -> str:
@@ -42,6 +51,7 @@ def meme_film(titre_jpbox: str, annee_jpbox: int | None, resultat_tmdb: dict) ->
     """Valide qu'un résultat TMDB correspond bien au film JPBOX :
     les titres doivent se ressembler ET l'année de sortie doit coller
     (±1 an, pour absorber le décalage entre sortie française et étrangère)."""
+    titre_jpbox = nettoyer_annotations(titre_jpbox)
     titre_tmdb = resultat_tmdb.get("title", "")
     if not se_ressemblent(titre_jpbox, titre_tmdb):
         return False

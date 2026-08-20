@@ -20,13 +20,15 @@ class Oeuvre(Base):
     nom_original: Mapped[str] = mapped_column(String(255), nullable=True)
     synopsis: Mapped[str] = mapped_column(Text, nullable=True)
     annee_sortie: Mapped[int] = mapped_column(Integer, nullable=True)
-    note_allocine: Mapped[float] = mapped_column(Float, nullable=True)
-    note_sens_critique: Mapped[float] = mapped_column(Float, nullable=True)
+    # Note communautaire TMDB (sur 10), récupérée avec le reste des infos TMDB.
+    note_tmdb: Mapped[float] = mapped_column(Float, nullable=True)
+    # Note IMDb (sur 10), récupérée via le fichier officiel IMDb (imdb.py).
+    note_imdb: Mapped[float] = mapped_column(Float, nullable=True)
     # Les 3 mots-clés extraits automatiquement du synopsis par l'agent IA
     # branché sur le pipeline N8n (un mot-clé par colonne, pas de liste).
-    mot_cle_1: Mapped[str] = mapped_column(String(50), nullable=True)
-    mot_cle_2: Mapped[str] = mapped_column(String(50), nullable=True)
-    mot_cle_3: Mapped[str] = mapped_column(String(50), nullable=True)
+    mot_cle_1: Mapped[str] = mapped_column(String(100), nullable=True)
+    mot_cle_2: Mapped[str] = mapped_column(String(100), nullable=True)
+    mot_cle_3: Mapped[str] = mapped_column(String(100), nullable=True)
     # Nombre d'entrées en salle sur la première semaine d'exploitation.
     # C'est la valeur que le modèle de prédiction doit apprendre à estimer
     # (la "cible"/"target" en Machine Learning) à partir des autres colonnes
@@ -36,8 +38,12 @@ class Oeuvre(Base):
     entrees_premiere_semaine: Mapped[int] = mapped_column(Integer, nullable=True)
     # Identifiants externes : ils servent à retrouver un film déjà enregistré
     # au lieu d'en recréer un doublon à chaque passage du scraper.
+    # id_jpbox reste la seule clé d'identité par ligne : une reprise en salle
+    # (ex: "Kill Bill (Rep. 2004)") a son propre id_jpbox et sa propre
+    # entrees_premiere_semaine, mais partage le même id_tmdb que la sortie
+    # initiale du même film — donc id_tmdb n'est volontairement pas unique.
     id_jpbox: Mapped[int] = mapped_column(Integer, nullable=True, unique=True)
-    id_tmdb: Mapped[int] = mapped_column(Integer, nullable=True, unique=True)
+    id_tmdb: Mapped[int] = mapped_column(Integer, nullable=True)
     id_nature: Mapped[int] = mapped_column(ForeignKey("nature.id_nature"), nullable=False)
 
     # Chaque relationship() ci-dessous correspond à une des tables
