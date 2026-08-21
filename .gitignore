@@ -24,6 +24,9 @@ frontend_django/staticfiles/
 mlruns/
 mlartifacts/
 
+# CatBoost (logs de training generes automatiquement)
+catboost_info/
+
 # Data
 ml-latest/
 *.csv
