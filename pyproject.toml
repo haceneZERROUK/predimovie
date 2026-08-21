@@ -63,4 +63,4 @@ testpaths = ["backend/tests", "database/tests", "data_engineering/tests", "ml/te
 [tool.semantic_release]
 version_variables = ["pyproject.toml:project.version"]
 branch = "main"
-build_command = false
+build_command = ""
