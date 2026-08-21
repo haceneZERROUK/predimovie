@@ -23,6 +23,7 @@ frontend_django/staticfiles/
 # MLflow
 mlruns/
 mlartifacts/
+mlflow.db
 
 # CatBoost (logs de training generes automatiquement)
 catboost_info/

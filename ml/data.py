@@ -69,7 +69,10 @@ POIDS_LISSAGE = 8
 
 
 def _stats_par_entite(
-    liaisons: pd.DataFrame, colonne_nom: str, oeuvres_train: pd.DataFrame, moyenne_cible_globale: float
+    liaisons: pd.DataFrame,
+    colonne_nom: str,
+    oeuvres_train: pd.DataFrame,
+    moyenne_cible_globale: float,
 ) -> pd.DataFrame:
     """Calcule, pour chaque personne/societe/genre, deux choses a partir
     UNIQUEMENT des films du train : sa popularite (dans combien de films
@@ -87,7 +90,7 @@ def _stats_par_entite(
         popularite=("id_oeuvre", "count"),
         moyenne_brute=("entrees_log", "mean"),
     )
-    # formule du lissage : (nb_films * moyenne_de_la_personne + poids * moyenne_globale) / (nb_films + poids)
+    # formule du lissage : (nb_films * moyenne_perso + poids * moyenne_globale) / (nb_films + poids)
     # ex: 1 seul film -> l'encodage reste tres proche de la moyenne globale
     #     50 films -> l'encodage fait presque entierement confiance a sa propre moyenne
     stats["encodage_cible"] = (
@@ -97,8 +100,12 @@ def _stats_par_entite(
 
 
 def _ajouter_features_entite(
-    oeuvres: pd.DataFrame, liaisons: pd.DataFrame, colonne_nom: str, prefixe: str,
-    stats: pd.DataFrame, moyenne_cible_globale: float,
+    oeuvres: pd.DataFrame,
+    liaisons: pd.DataFrame,
+    colonne_nom: str,
+    prefixe: str,
+    stats: pd.DataFrame,
+    moyenne_cible_globale: float,
 ) -> pd.DataFrame:
     """Applique les stats (calculees sur le train par _stats_par_entite) a
     n'importe quel jeu de films (train ou test). Un acteur jamais vu dans le
@@ -118,11 +125,15 @@ def _ajouter_features_entite(
     oeuvres = oeuvres.merge(par_film, on="id_oeuvre", how="left")
     oeuvres[f"{prefixe}_nb"] = oeuvres[f"{prefixe}_nb"].fillna(0)
     oeuvres[f"{prefixe}_pop_max"] = oeuvres[f"{prefixe}_pop_max"].fillna(0)
-    oeuvres[f"{prefixe}_encodage_cible"] = oeuvres[f"{prefixe}_encodage_cible"].fillna(moyenne_cible_globale)
+    oeuvres[f"{prefixe}_encodage_cible"] = oeuvres[f"{prefixe}_encodage_cible"].fillna(
+        moyenne_cible_globale
+    )
     return oeuvres
 
 
-def _ajouter_genres(oeuvres: pd.DataFrame, genres: pd.DataFrame, colonnes_genre_train: list[str] | None):
+def _ajouter_genres(
+    oeuvres: pd.DataFrame, genres: pd.DataFrame, colonnes_genre_train: list[str] | None
+):
     """One-hot des genres + nb_genres. Si colonnes_genre_train est fourni
     (cas du test), on reutilise exactement les memes colonnes que le train
     pour que X_train et X_test aient les memes features dans le meme ordre."""
@@ -152,7 +163,9 @@ def construire_features(
     apprises sur le train puis appliquees telles quelles au test."""
     moyenne_cible_globale = np.log1p(oeuvres_train["entrees_premiere_semaine"]).mean()
 
-    oeuvres_train, colonnes_genre = _ajouter_genres(oeuvres_train, genres, colonnes_genre_train=None)
+    oeuvres_train, colonnes_genre = _ajouter_genres(
+        oeuvres_train, genres, colonnes_genre_train=None
+    )
     oeuvres_test, _ = _ajouter_genres(oeuvres_test, genres, colonnes_genre_train=colonnes_genre)
 
     for liaisons, colonne_nom, prefixe in [
@@ -175,24 +188,39 @@ def construire_features(
     # colonnes motcle_ avaient une importance exactement nulle (jamais utilisees)
     for df in (oeuvres_train, oeuvres_test):
         df["mots_cles_texte"] = (
-            df["mot_cle_1"].fillna("") + " " + df["mot_cle_2"].fillna("") + " " + df["mot_cle_3"].fillna("")
+            df["mot_cle_1"].fillna("")
+            + " "
+            + df["mot_cle_2"].fillna("")
+            + " "
+            + df["mot_cle_3"].fillna("")
         )
     vectoriseur = TfidfVectorizer(max_features=75, ngram_range=(1, 2))
     tfidf_train = vectoriseur.fit_transform(oeuvres_train["mots_cles_texte"])
     tfidf_test = vectoriseur.transform(oeuvres_test["mots_cles_texte"])
     colonnes_motcle = [f"motcle_{m}" for m in vectoriseur.get_feature_names_out()]
-    motcle_train_df = pd.DataFrame(tfidf_train.toarray(), columns=colonnes_motcle, index=oeuvres_train.index)
-    motcle_test_df = pd.DataFrame(tfidf_test.toarray(), columns=colonnes_motcle, index=oeuvres_test.index)
+    motcle_train_df = pd.DataFrame(
+        tfidf_train.toarray(), columns=colonnes_motcle, index=oeuvres_train.index
+    )
+    motcle_test_df = pd.DataFrame(
+        tfidf_test.toarray(), columns=colonnes_motcle, index=oeuvres_test.index
+    )
 
     colonnes_a_garder = (
         ["annee_sortie", "note_tmdb", "note_imdb", "nb_genres"]
         + colonnes_genre
         + [
-            "acteur_nb", "acteur_pop_max", "acteur_encodage_cible",
-            "realisateur_nb", "realisateur_pop_max", "realisateur_encodage_cible",
-            "production_nb", "production_pop_max", "production_encodage_cible",
+            "acteur_nb",
+            "acteur_pop_max",
+            "acteur_encodage_cible",
+            "realisateur_nb",
+            "realisateur_pop_max",
+            "realisateur_encodage_cible",
+            "production_nb",
+            "production_pop_max",
+            "production_encodage_cible",
             # genre_cible_nb retire : redondant avec nb_genres, importance nulle
-            "genre_cible_pop_max", "genre_cible_encodage_cible",
+            "genre_cible_pop_max",
+            "genre_cible_encodage_cible",
         ]
     )
 
@@ -208,5 +236,9 @@ def charger_dataset_train_test(test_size: float = 0.2, random_state: int = 42):
     """Point d'entree principal : charge tout depuis postgres, fait le
     split, et renvoie X_train, X_test, y_train, y_test prets a l'emploi."""
     oeuvres, genres, acteurs, realisateurs, productions = charger_donnees_brutes()
-    oeuvres_train, oeuvres_test = train_test_split(oeuvres, test_size=test_size, random_state=random_state)
-    return construire_features(oeuvres_train, oeuvres_test, genres, acteurs, realisateurs, productions)
+    oeuvres_train, oeuvres_test = train_test_split(
+        oeuvres, test_size=test_size, random_state=random_state
+    )
+    return construire_features(
+        oeuvres_train, oeuvres_test, genres, acteurs, realisateurs, productions
+    )

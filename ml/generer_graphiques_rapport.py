@@ -9,7 +9,6 @@ import matplotlib.pyplot as plt
 import mlflow
 import numpy as np
 import pandas as pd
-from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
 from ml.data import charger_dataset_train_test
 
@@ -49,7 +48,10 @@ def graphique_comparaison(client, resultats: pd.DataFrame):
     couleurs = [COULEUR_CHAMPION if i == 0 else COULEUR_PRINCIPALE for i in range(len(resultats))]
 
     for ax, colonne, titre in zip(
-        axes, ["rmse", "mae", "r2"], ["RMSE (plus bas = mieux)", "MAE (plus bas = mieux)", "R² (plus haut = mieux)"]
+        axes,
+        ["rmse", "mae", "r2"],
+        ["RMSE (plus bas = mieux)", "MAE (plus bas = mieux)", "R² (plus haut = mieux)"],
+        strict=True,
     ):
         ax.barh(resultats["modele"], resultats[colonne], color=couleurs)
         ax.set_title(titre)
@@ -104,7 +106,10 @@ def graphique_importance_mots_cles(importances_completes: pd.DataFrame):
     part_autres = autres["importance"].sum()
     axes[0].pie(
         [part_motcles, part_autres],
-        labels=[f"mots-cles\n({len(motcles)} features)", f"autres features\n({len(autres)} features)"],
+        labels=[
+            f"mots-cles\n({len(motcles)} features)",
+            f"autres features\n({len(autres)} features)",
+        ],
         colors=["#f59e0b", COULEUR_PRINCIPALE],
         autopct="%1.0f%%",
     )
@@ -125,12 +130,18 @@ def graphique_gros_vs_petits(resultats: pd.DataFrame):
     largeur = 0.35
     positions = range(len(tri))
     ax.barh(
-        [p + largeur / 2 for p in positions], tri["rmse_gros_films"], height=largeur,
-        label="gros films (>500k entrees)", color="#dc2626",
+        [p + largeur / 2 for p in positions],
+        tri["rmse_gros_films"],
+        height=largeur,
+        label="gros films (>500k entrees)",
+        color="#dc2626",
     )
     ax.barh(
-        [p - largeur / 2 for p in positions], tri["rmse_petits_films"], height=largeur,
-        label="petits films", color=COULEUR_PRINCIPALE,
+        [p - largeur / 2 for p in positions],
+        tri["rmse_petits_films"],
+        height=largeur,
+        label="petits films",
+        color=COULEUR_PRINCIPALE,
     )
     ax.set_yticks(list(positions))
     ax.set_yticklabels(tri["modele"])
@@ -188,12 +199,14 @@ def graphique_distribution_cible():
 
 # les 2 runs precedents ont ete supprimes de mlflow (on repartait a zero a
 # chaque fois), donc ces chiffres sont recopies depuis les logs de l'epoque
-EVOLUTION_ITERATIONS = pd.DataFrame([
-    {"version": "V1\n(features de base)", "rmse": 258464, "r2": 0.241},
-    {"version": "V2\n(encodage cible\nsans lissage)", "rmse": 260089, "r2": 0.232},
-    {"version": "V3\n(lissage + genre\n+ ponderation)", "rmse": 249088, "r2": 0.295},
-    {"version": "V4\n(features inutiles\nretirees)", "rmse": 249162, "r2": 0.295},
-])
+EVOLUTION_ITERATIONS = pd.DataFrame(
+    [
+        {"version": "V1\n(features de base)", "rmse": 258464, "r2": 0.241},
+        {"version": "V2\n(encodage cible\nsans lissage)", "rmse": 260089, "r2": 0.232},
+        {"version": "V3\n(lissage + genre\n+ ponderation)", "rmse": 249088, "r2": 0.295},
+        {"version": "V4\n(features inutiles\nretirees)", "rmse": 249162, "r2": 0.295},
+    ]
+)
 
 
 def graphique_evolution():

@@ -58,7 +58,7 @@ target-version = ["py311"]
 extend-exclude = "(frontend_django/.*/migrations|database/alembic/versions)"
 
 [tool.pytest.ini_options]
-testpaths = ["backend/tests", "database/tests", "data_engineering/tests"]
+testpaths = ["backend/tests", "database/tests", "data_engineering/tests", "ml/tests"]
 
 [tool.semantic_release]
 version_variables = ["pyproject.toml:project.version"]

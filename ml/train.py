@@ -7,11 +7,11 @@ import joblib
 import mlflow
 import numpy as np
 import pandas as pd
+from catboost import CatBoostRegressor
 from sklearn.inspection import permutation_importance
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.model_selection import RandomizedSearchCV
 from xgboost import XGBRegressor
-from catboost import CatBoostRegressor
 
 from ml.data import charger_dataset_train_test
 
@@ -78,7 +78,9 @@ def _importance_features(modele, colonnes: list[str], X_test, y_test_log) -> pd.
     )
 
 
-def entrainer_un_modele(nom_modele: str, config: dict, X_train, X_test, y_train_log, y_test, poids_train):
+def entrainer_un_modele(
+    nom_modele: str, config: dict, X_train, X_test, y_train_log, y_test, poids_train
+):
     """Fait la recherche d'hyperparametres pour un modele, logue tout dans
     mlflow, et renvoie les metriques du meilleur essai pour comparer a la fin."""
     print(f"\n=== {nom_modele} ===")
@@ -171,7 +173,9 @@ def main():
 
     resultats = []
     for nom_modele, config in MODELES.items():
-        resultat = entrainer_un_modele(nom_modele, config, X_train, X_test, y_train, y_test, poids_train)
+        resultat = entrainer_un_modele(
+            nom_modele, config, X_train, X_test, y_train, y_test, poids_train
+        )
         resultats.append(resultat)
 
     resultats.sort(key=lambda r: r["rmse"])
@@ -179,8 +183,10 @@ def main():
     print("\n\n=== CLASSEMENT FINAL (du meilleur au moins bon) ===")
     for r in resultats:
         print(
-            f"  {r['nom_modele']:25s} rmse={r['rmse']:>8.0f}  mae={r['mae']:>8.0f}  r2={r['r2']:.3f}"
-            f"  rmse_gros={r['rmse_gros_films']:>8.0f}  rmse_petits={r['rmse_petits_films']:>8.0f}"
+            f"  {r['nom_modele']:25s} rmse={r['rmse']:>8.0f}"
+            f"  mae={r['mae']:>8.0f}  r2={r['r2']:.3f}"
+            f"  rmse_gros={r['rmse_gros_films']:>8.0f}"
+            f"  rmse_petits={r['rmse_petits_films']:>8.0f}"
         )
 
     meilleur = resultats[0]
