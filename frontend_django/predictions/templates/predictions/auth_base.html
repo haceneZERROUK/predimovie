@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Predimovie</title>
+<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="min-h-screen bg-gray-900 flex items-center justify-center">
+
+<div class="w-full max-w-md">
+  {% if messages %}
+  <div class="mb-4 space-y-2">
+    {% for message in messages %}
+    <div class="px-4 py-3 rounded-lg text-sm
+      {% if message.tags == 'error' %}bg-red-900/50 text-red-300 border border-red-700
+      {% elif message.tags == 'success' %}bg-green-900/50 text-green-300 border border-green-700
+      {% else %}bg-yellow-900/50 text-yellow-300 border border-yellow-700{% endif %}">
+      {{ message }}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% block contenu %}{% endblock %}
+</div>
+
+</body>
+</html>

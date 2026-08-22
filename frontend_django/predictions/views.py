@@ -2,10 +2,17 @@ import jwt
 from django.contrib import messages
 from django.shortcuts import redirect, render
 
-from predictions.api_client import ErreurAPI, films_a_venir
+from predictions.api_client import (
+    ErreurAPI,
+    films_a_venir,
+    historique_predictions,
+    metriques_brutes,
+)
 from predictions.api_client import login as appel_login
 from predictions.api_client import predict as appel_predict
-from predictions.decorators import connexion_requise
+from predictions.api_client import relancer_predictions as appel_relancer
+from predictions.decorators import admin_requis, connexion_requise
+from predictions.metrics_parser import parser_metriques
 
 
 def login_view(request):
@@ -70,3 +77,38 @@ def top10_view(request):
     top10 = predictions[:10]
 
     return render(request, "predictions/top10.html", {"predictions": top10})
+
+
+@admin_requis
+def historique_view(request):
+    token = request.session["token"]
+    try:
+        historique = historique_predictions(token)
+    except ErreurAPI as erreur:
+        messages.error(request, str(erreur))
+        historique = []
+    return render(request, "predictions/historique.html", {"historique": historique})
+
+
+@admin_requis
+def relancer_view(request):
+    token = request.session["token"]
+    if request.method == "POST":
+        try:
+            resultat = appel_relancer(token)
+            messages.success(request, f"{resultat['nombre_predictions']} predictions recalculees.")
+        except ErreurAPI as erreur:
+            messages.error(request, str(erreur))
+    return redirect("predictions:accueil")
+
+
+@admin_requis
+def monitoring_view(request):
+    token = request.session["token"]
+    try:
+        texte = metriques_brutes(token)
+        metriques = parser_metriques(texte)
+    except ErreurAPI as erreur:
+        messages.error(request, str(erreur))
+        metriques = None
+    return render(request, "predictions/monitoring.html", {"metriques": metriques})

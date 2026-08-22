@@ -1,8 +1,12 @@
 {% extends "predictions/base.html" %}
 {% block contenu %}
-<h1>Bienvenue</h1>
-<p><a href="{% url 'predictions:top10' %}">Voir le top 10 des prochaines sorties</a></p>
+<h1 class="text-2xl font-bold text-white mb-6">Bienvenue</h1>
+<a href="{% url 'predictions:top10' %}" class="text-purple-400 hover:text-purple-300">
+  Voir le top 10 des prochaines sorties &rarr;
+</a>
 {% if request.session.role == "admin" %}
-<p><em>Compte admin : les pages de gestion arrivent aussi a une prochaine etape.</em></p>
+<p class="text-gray-400 text-sm mt-4">
+  Compte admin : historique predit/reel, monitoring et relance des predictions dans le menu a gauche.
+</p>
 {% endif %}
 {% endblock %}

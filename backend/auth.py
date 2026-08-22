@@ -49,3 +49,12 @@ def utilisateur_connecte(
         return decoder_token(identifiants.credentials)
     except Exception as erreur:
         raise HTTPException(status_code=401, detail="Token invalide ou expire") from erreur
+
+
+def utilisateur_admin(utilisateur: dict = Depends(utilisateur_connecte)) -> dict:
+    """Meme chose que utilisateur_connecte, mais en plus verifie que le
+    role est admin. A utiliser sur les routes reservees a l'admin
+    (relancer les predictions, voir l'historique...)."""
+    if utilisateur.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Reserve aux administrateurs")
+    return utilisateur

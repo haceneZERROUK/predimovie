@@ -1,21 +1,32 @@
 {% extends "predictions/base.html" %}
 {% block contenu %}
-<h1>Top 10 des prochaines sorties</h1>
-<p>Films pas encore sortis, classes par entrees premiere semaine predites par le modele.</p>
+<h1 class="text-2xl font-bold text-white mb-2">Top 10 des prochaines sorties</h1>
+<p class="text-gray-400 mb-6">Films pas encore sortis, classes par entrees premiere semaine predites.</p>
 
 {% if predictions %}
-<table>
-  <tr><th>#</th><th>Film</th><th>Date de sortie</th><th>Entrees predites</th></tr>
-  {% for prediction in predictions %}
-  <tr>
-    <td>{{ forloop.counter }}</td>
-    <td>{{ prediction.nom_francais }}</td>
-    <td>{{ prediction.date_sortie|default:"inconnue" }}</td>
-    <td>{{ prediction.entrees_premiere_semaine_predites }}</td>
-  </tr>
-  {% endfor %}
-</table>
+<div class="bg-gray-800 rounded-lg overflow-hidden">
+  <table class="w-full">
+    <thead>
+      <tr class="bg-gray-700">
+        <th class="px-6 py-3 text-left text-sm font-semibold text-gray-300">#</th>
+        <th class="px-6 py-3 text-left text-sm font-semibold text-gray-300">Film</th>
+        <th class="px-6 py-3 text-left text-sm font-semibold text-gray-300">Date de sortie</th>
+        <th class="px-6 py-3 text-left text-sm font-semibold text-gray-300">Entrees predites</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-700">
+      {% for prediction in predictions %}
+      <tr class="text-gray-300">
+        <td class="px-6 py-4">{{ forloop.counter }}</td>
+        <td class="px-6 py-4 font-medium text-white">{{ prediction.nom_francais }}</td>
+        <td class="px-6 py-4">{{ prediction.date_sortie|default:"inconnue" }}</td>
+        <td class="px-6 py-4 text-green-400">{{ prediction.entrees_premiere_semaine_predites }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
 {% else %}
-<p>Aucune prediction disponible pour le moment.</p>
+<p class="text-gray-400">Aucune prediction disponible pour le moment.</p>
 {% endif %}
 {% endblock %}

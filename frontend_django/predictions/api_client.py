@@ -42,3 +42,34 @@ def predict(id_oeuvre: int, token: str) -> dict:
     if reponse.status_code != 200:
         raise ErreurAPI(reponse.json().get("detail", "Erreur de prediction"))
     return reponse.json()
+
+
+def relancer_predictions(token: str) -> dict:
+    reponse = httpx.post(
+        f"{settings.BACKEND_API_URL}/predictions/relancer",
+        headers={"Authorization": f"Bearer {token}"},
+        timeout=60,
+    )
+    if reponse.status_code != 200:
+        raise ErreurAPI(reponse.json().get("detail", "Erreur lors de la relance"))
+    return reponse.json()
+
+
+def historique_predictions(token: str) -> list[dict]:
+    reponse = httpx.get(
+        f"{settings.BACKEND_API_URL}/predictions/historique",
+        headers={"Authorization": f"Bearer {token}"},
+        timeout=10,
+    )
+    if reponse.status_code != 200:
+        raise ErreurAPI(reponse.json().get("detail", "Erreur de recuperation de l'historique"))
+    return reponse.json()
+
+
+def metriques_brutes(token: str) -> str:
+    """Renvoie le texte brut expose par /metrics (format Prometheus),
+    parse ensuite cote vue pour en tirer quelques chiffres simples."""
+    reponse = httpx.get(f"{settings.BACKEND_API_URL}/metrics", timeout=10)
+    if reponse.status_code != 200:
+        raise ErreurAPI("Erreur de recuperation des metriques")
+    return reponse.text

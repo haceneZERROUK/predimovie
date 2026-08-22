@@ -12,6 +12,11 @@ FAUX_TOKEN = jwt.encode(
     "peu-importe-cle-de-test-bidon",
     algorithm="HS256",
 )
+FAUX_TOKEN_ADMIN = jwt.encode(
+    {"sub": "admin@example.com", "role": "admin"},
+    "peu-importe-cle-de-test-bidon",
+    algorithm="HS256",
+)
 
 
 @pytest.mark.django_db
@@ -89,6 +94,14 @@ def _connecte(client):
     session.save()
 
 
+def _connecte_admin(client):
+    session = client.session
+    session["token"] = FAUX_TOKEN_ADMIN
+    session["mail"] = "admin@example.com"
+    session["role"] = "admin"
+    session.save()
+
+
 @pytest.mark.django_db
 def test_top10_redirige_si_pas_connecte(client):
     reponse = client.get(reverse("predictions:top10"))
@@ -146,3 +159,74 @@ def test_top10_ignore_un_film_dont_la_prediction_echoue(client, monkeypatch):
     predictions = reponse.context["predictions"]
     assert len(predictions) == 1
     assert predictions[0]["id_oeuvre"] == 2
+
+
+@pytest.mark.django_db
+def test_historique_refuse_un_compte_cinema(client):
+    _connecte(client)
+    reponse = client.get(reverse("predictions:historique"))
+    assert reponse.status_code == 302
+    assert reponse.url == reverse("predictions:accueil")
+
+
+@pytest.mark.django_db
+def test_historique_accessible_pour_admin(client, monkeypatch):
+    _connecte_admin(client)
+    faux_historique = [
+        {
+            "nom_francais": "Film Test",
+            "entrees_premiere_semaine_predites": 900,
+            "entrees_premiere_semaine_reelles": 1000,
+            "date_prediction": "2026-08-22T10:00:00",
+            "ecart": -100,
+        }
+    ]
+    monkeypatch.setattr("predictions.views.historique_predictions", lambda token: faux_historique)
+    reponse = client.get(reverse("predictions:historique"))
+    assert reponse.status_code == 200
+    assert reponse.context["historique"] == faux_historique
+
+
+@pytest.mark.django_db
+def test_relancer_refuse_un_compte_cinema(client):
+    _connecte(client)
+    reponse = client.post(reverse("predictions:relancer"))
+    assert reponse.status_code == 302
+    assert reponse.url == reverse("predictions:accueil")
+
+
+@pytest.mark.django_db
+def test_relancer_appelle_lapi_et_redirige(client, monkeypatch):
+    _connecte_admin(client)
+    appels = []
+    monkeypatch.setattr(
+        "predictions.views.appel_relancer",
+        lambda token: appels.append(token) or {"nombre_predictions": 5},
+    )
+    reponse = client.post(reverse("predictions:relancer"))
+    assert reponse.status_code == 302
+    assert reponse.url == reverse("predictions:accueil")
+    assert appels == [FAUX_TOKEN_ADMIN]
+
+
+@pytest.mark.django_db
+def test_monitoring_refuse_un_compte_cinema(client):
+    _connecte(client)
+    reponse = client.get(reverse("predictions:monitoring"))
+    assert reponse.status_code == 302
+    assert reponse.url == reverse("predictions:accueil")
+
+
+@pytest.mark.django_db
+def test_monitoring_affiche_les_metriques_parsees(client, monkeypatch):
+    _connecte_admin(client)
+    texte_prometheus = (
+        'http_requests_total{handler="/predict",method="POST",status="2xx"} 3.0\n'
+        'http_requests_total{handler="/health",method="GET",status="2xx"} 10.0\n'
+    )
+    monkeypatch.setattr("predictions.views.metriques_brutes", lambda token: texte_prometheus)
+    reponse = client.get(reverse("predictions:monitoring"))
+    assert reponse.status_code == 200
+    metriques = reponse.context["metriques"]
+    assert metriques["total_requetes"] == 13
+    assert metriques["requetes_predict"] == 3

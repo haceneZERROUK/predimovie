@@ -1,22 +1,15 @@
-# Route de prediction : charge le modele champion une seule fois (pas a
-# chaque requete), et l'utilise pour predire les entrees d'un film deja
-# en base (typiquement un film pas encore sorti, scrape par le flux A).
-import joblib
-import numpy as np
+# Route de prediction : utilise le modele deja charge dans
+# moteur_prediction.py pour predire les entrees d'un film deja en base
+# (typiquement un film pas encore sorti, scrape par le flux A).
 from fastapi import APIRouter, Depends, HTTPException
 
 from backend.auth import utilisateur_connecte
-from backend.config import CHEMIN_ARTEFACTS, CHEMIN_MODELE
+from backend.moteur_prediction import predire
 from backend.schemas import PredictionDemande, PredictionReponse
 from database.base import SessionLocal
 from database.models import Oeuvre
-from ml.data import construire_features_pour_predire
 
 router = APIRouter()
-
-# charges une seule fois au demarrage de l'API, pas a chaque appel
-_modele = joblib.load(CHEMIN_MODELE)
-_artefacts = joblib.load(CHEMIN_ARTEFACTS)
 
 
 @router.post("/predict", response_model=PredictionReponse)
@@ -30,12 +23,9 @@ def predict(demande: PredictionDemande, _utilisateur: dict = Depends(utilisateur
         session.close()
 
     try:
-        X = construire_features_pour_predire(demande.id_oeuvre, _artefacts)
+        prediction = predire(demande.id_oeuvre)
     except ValueError as erreur:
         raise HTTPException(status_code=404, detail=str(erreur)) from erreur
-
-    prediction_log = _modele.predict(X)
-    prediction = int(np.expm1(prediction_log[0]).clip(min=0))
 
     return PredictionReponse(
         id_oeuvre=oeuvre.id_oeuvre,
