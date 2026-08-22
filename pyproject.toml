@@ -37,6 +37,7 @@ dev = [
     "pytest-cov>=5.0",
     "pre-commit>=3.8",
     "python-semantic-release>=9.8",
+    "pytest-django>=4.14.0",
 ]
 
 [build-system]
@@ -65,7 +66,9 @@ target-version = ["py311"]
 extend-exclude = "(frontend_django/.*/migrations|database/alembic/versions)"
 
 [tool.pytest.ini_options]
-testpaths = ["backend/tests", "database/tests", "data_engineering/tests", "ml/tests"]
+testpaths = ["backend/tests", "database/tests", "data_engineering/tests", "ml/tests", "frontend_django/predictions"]
+DJANGO_SETTINGS_MODULE = "predimovie_web.settings"
+pythonpath = ["frontend_django"]
 
 [tool.semantic_release]
 version_variables = ["pyproject.toml:project.version"]

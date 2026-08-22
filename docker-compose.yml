@@ -36,7 +36,10 @@ services:
       dockerfile: ./backend/Dockerfile
     env_file: .env
     environment:
-      DATABASE_URL: ${DATABASE_URL}
+      # en dur "postgres" (le nom du service) au lieu de ${DATABASE_URL} :
+      # ce dernier pointe vers "localhost", ce qui marche depuis la machine
+      # mais pas depuis un conteneur (localhost = le conteneur lui-meme)
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       MLFLOW_TRACKING_URI: http://mlflow:5000
       JWT_SECRET_KEY: ${JWT_SECRET_KEY}
     ports:
@@ -64,7 +67,8 @@ services:
       dockerfile: ./data_engineering/Dockerfile
     env_file: .env
     environment:
-      DATABASE_URL: ${DATABASE_URL}
+      # meme raison que pour "backend" : "postgres" en dur, pas ${DATABASE_URL}
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       TMDB_API_KEY: ${TMDB_API_KEY}
       SCRAPER_API_KEY: ${SCRAPER_API_KEY}
     ports:

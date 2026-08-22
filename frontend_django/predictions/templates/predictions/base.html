@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Predimovie</title>
+<style>
+  body { font-family: Arial, sans-serif; max-width: 900px; margin: 2em auto; color: #1a1a1a; }
+  nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2em;
+        border-bottom: 1px solid #ddd; padding-bottom: 1em; }
+  nav a { margin-left: 1em; }
+  table { border-collapse: collapse; width: 100%; margin: 1em 0; }
+  th, td { border: 1px solid #ccc; padding: 6px 10px; text-align: left; }
+  th { background: #f2f2f2; }
+  .messages { list-style: none; padding: 0; }
+  .messages li { padding: 0.6em 1em; margin-bottom: 0.5em; border-radius: 4px; }
+  .messages .error { background: #fee2e2; color: #991b1b; }
+  .messages .warning { background: #fef3c7; color: #92400e; }
+  .messages .success { background: #dcfce7; color: #166534; }
+  form label { display: block; margin-top: 0.8em; }
+  form input { padding: 0.4em; width: 100%; max-width: 300px; }
+  button { margin-top: 1em; padding: 0.5em 1.2em; cursor: pointer; }
+</style>
+</head>
+<body>
+
+{% if request.session.token %}
+<nav>
+  <div>Connecte en tant que <strong>{{ request.session.mail }}</strong> ({{ request.session.role }})</div>
+  <div><a href="{% url 'predictions:accueil' %}">Accueil</a><a href="{% url 'predictions:logout' %}">Deconnexion</a></div>
+</nav>
+{% endif %}
+
+{% if messages %}
+<ul class="messages">
+  {% for message in messages %}
+  <li class="{{ message.tags }}">{{ message }}</li>
+  {% endfor %}
+</ul>
+{% endif %}
+
+{% block contenu %}{% endblock %}
+
+</body>
+</html>
