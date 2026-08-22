@@ -7,6 +7,7 @@ from database.models.compte import Compte, RoleCompte
 from database.models.genre import Genre, GenreOeuvre
 from database.models.nature import Nature
 from database.models.oeuvre import Oeuvre
+from database.models.prediction import Prediction
 from database.models.production import Production, ProductionOeuvre
 from database.models.realisateur import Realisateur, RealisateurOeuvre
 
@@ -19,6 +20,7 @@ __all__ = [
     "GenreOeuvre",
     "Nature",
     "Oeuvre",
+    "Prediction",
     "Production",
     "ProductionOeuvre",
     "Realisateur",
