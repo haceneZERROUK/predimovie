@@ -164,7 +164,7 @@ def entrainer_un_modele(
 
 def main():
     print("chargement des donnees depuis postgres...")
-    X_train, X_test, y_train, y_test = charger_dataset_train_test()
+    X_train, X_test, y_train, y_test, artefacts = charger_dataset_train_test()
     print(f"{len(X_train) + len(X_test)} films, {X_train.shape[1]} features")
 
     # poids = entrees brutes du train : un blockbuster pese beaucoup plus
@@ -195,7 +195,13 @@ def main():
     print(meilleur["importances"].head(15).to_string(index=False))
 
     joblib.dump(meilleur["modele"], "ml/modele_champion.joblib")
+    # les artefacts (vectoriseur tf-idf, stats d'encodage, medianes...) sont
+    # ce dont l'API a besoin pour construire les features d'un film tout
+    # neuf de la meme facon qu'ici, sans quoi le modele recevrait des
+    # colonnes incoherentes avec ce sur quoi il a ete entraine
+    joblib.dump(artefacts, "ml/artefacts_features.joblib")
     print("\nmodele champion sauvegarde dans ml/modele_champion.joblib")
+    print("artefacts de features sauvegardes dans ml/artefacts_features.joblib")
 
 
 if __name__ == "__main__":

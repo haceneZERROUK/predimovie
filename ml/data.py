@@ -43,6 +43,37 @@ SELECT po.id_oeuvre, p.nom_societe AS nom_production
 FROM production_oeuvre po JOIN production p ON p.id_production = po.id_production;
 """
 
+# variantes "un seul film" pour la prediction : pas de filtre sur
+# entrees_premiere_semaine (justement, on ne la connait pas encore)
+REQUETE_OEUVRE_PAR_ID = """
+SELECT id_oeuvre, annee_sortie, note_tmdb, note_imdb, mot_cle_1, mot_cle_2, mot_cle_3
+FROM oeuvre WHERE id_oeuvre = %(id_oeuvre)s;
+"""
+
+REQUETE_GENRES_PAR_ID = """
+SELECT go.id_oeuvre, g.nom_genre
+FROM genre_oeuvre go JOIN genre g ON g.id_genre = go.id_genre
+WHERE go.id_oeuvre = %(id_oeuvre)s;
+"""
+
+REQUETE_ACTEURS_PAR_ID = """
+SELECT ao.id_oeuvre, a.prenom || ' ' || a.nom AS nom_complet
+FROM acteur_oeuvre ao JOIN acteur a ON a.id_acteur = ao.id_acteur
+WHERE ao.id_oeuvre = %(id_oeuvre)s;
+"""
+
+REQUETE_REALISATEURS_PAR_ID = """
+SELECT ro.id_oeuvre, r.prenom || ' ' || r.nom AS nom_complet
+FROM realisateur_oeuvre ro JOIN realisateur r ON r.id_realisateur = ro.id_realisateur
+WHERE ro.id_oeuvre = %(id_oeuvre)s;
+"""
+
+REQUETE_PRODUCTIONS_PAR_ID = """
+SELECT po.id_oeuvre, p.nom_societe AS nom_production
+FROM production_oeuvre po JOIN production p ON p.id_production = po.id_production
+WHERE po.id_oeuvre = %(id_oeuvre)s;
+"""
+
 
 def charger_donnees_brutes():
     """Charge tout depuis postgres, sans aucun calcul qui touche la cible.
@@ -55,10 +86,14 @@ def charger_donnees_brutes():
     realisateurs = pd.read_sql(REQUETE_REALISATEURS, engine)
     productions = pd.read_sql(REQUETE_PRODUCTIONS, engine)
 
+    # on garde les medianes utilisees : il en faudra pour imputer un futur
+    # film tout neuf a l'inference, de la meme facon qu'ici
+    medianes = {}
     for colonne in ["annee_sortie", "note_tmdb", "note_imdb"]:
-        oeuvres[colonne] = oeuvres[colonne].fillna(oeuvres[colonne].median())
+        medianes[colonne] = oeuvres[colonne].median()
+        oeuvres[colonne] = oeuvres[colonne].fillna(medianes[colonne])
 
-    return oeuvres, genres, acteurs, realisateurs, productions
+    return oeuvres, genres, acteurs, realisateurs, productions, medianes
 
 
 # lissage bayesien de l'encodage cible : plus une personne/societe a peu de
@@ -157,10 +192,14 @@ def construire_features(
     acteurs: pd.DataFrame,
     realisateurs: pd.DataFrame,
     productions: pd.DataFrame,
-) -> tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series, dict]:
     """Construit X_train/X_test a partir des tables brutes deja splittees.
     Toutes les stats (popularite, encodage cible, vocabulaire tf-idf) sont
-    apprises sur le train puis appliquees telles quelles au test."""
+    apprises sur le train puis appliquees telles quelles au test.
+
+    Renvoie aussi un dict "artefacts" : tout ce qu'il faut garder pour
+    construire les features d'un film tout neuf plus tard (l'API de
+    prediction s'en sert, cf ml/predire.py)."""
     moyenne_cible_globale = np.log1p(oeuvres_train["entrees_premiere_semaine"]).mean()
 
     oeuvres_train, colonnes_genre = _ajouter_genres(
@@ -168,6 +207,7 @@ def construire_features(
     )
     oeuvres_test, _ = _ajouter_genres(oeuvres_test, genres, colonnes_genre_train=colonnes_genre)
 
+    stats_par_prefixe = {}
     for liaisons, colonne_nom, prefixe in [
         (acteurs, "nom_complet", "acteur"),
         (realisateurs, "nom_complet", "realisateur"),
@@ -175,6 +215,7 @@ def construire_features(
         (genres, "nom_genre", "genre_cible"),
     ]:
         stats = _stats_par_entite(liaisons, colonne_nom, oeuvres_train, moyenne_cible_globale)
+        stats_par_prefixe[prefixe] = stats
         oeuvres_train = _ajouter_features_entite(
             oeuvres_train, liaisons, colonne_nom, prefixe, stats, moyenne_cible_globale
         )
@@ -229,16 +270,85 @@ def construire_features(
     y_train = oeuvres_train["entrees_premiere_semaine"]
     y_test = oeuvres_test["entrees_premiere_semaine"]
 
-    return X_train, X_test, y_train, y_test
+    artefacts = {
+        "moyenne_cible_globale": moyenne_cible_globale,
+        "colonnes_genre": colonnes_genre,
+        "stats_acteur": stats_par_prefixe["acteur"],
+        "stats_realisateur": stats_par_prefixe["realisateur"],
+        "stats_production": stats_par_prefixe["production"],
+        "stats_genre_cible": stats_par_prefixe["genre_cible"],
+        "vectoriseur_motcle": vectoriseur,
+        "colonnes_finales": list(X_train.columns),
+    }
+
+    return X_train, X_test, y_train, y_test, artefacts
 
 
 def charger_dataset_train_test(test_size: float = 0.2, random_state: int = 42):
     """Point d'entree principal : charge tout depuis postgres, fait le
-    split, et renvoie X_train, X_test, y_train, y_test prets a l'emploi."""
-    oeuvres, genres, acteurs, realisateurs, productions = charger_donnees_brutes()
+    split, et renvoie X_train, X_test, y_train, y_test, artefacts prets a l'emploi."""
+    oeuvres, genres, acteurs, realisateurs, productions, medianes = charger_donnees_brutes()
     oeuvres_train, oeuvres_test = train_test_split(
         oeuvres, test_size=test_size, random_state=random_state
     )
-    return construire_features(
+    X_train, X_test, y_train, y_test, artefacts = construire_features(
         oeuvres_train, oeuvres_test, genres, acteurs, realisateurs, productions
     )
+    artefacts["medianes"] = medianes
+    return X_train, X_test, y_train, y_test, artefacts
+
+
+def construire_features_pour_predire(id_oeuvre: int, artefacts: dict) -> pd.DataFrame:
+    """Construit une ligne de features pour UN film (pas encore sorti,
+    entrees_premiere_semaine inconnue), en reutilisant les artefacts appris
+    pendant l'entrainement (stats d'encodage, vectoriseur tf-idf, medianes,
+    colonnes). C'est ce qu'utilise l'API pour predire un nouveau film."""
+    engine = get_engine()
+    params = {"id_oeuvre": id_oeuvre}
+
+    oeuvre = pd.read_sql(REQUETE_OEUVRE_PAR_ID, engine, params=params)
+    if oeuvre.empty:
+        raise ValueError(f"aucun film avec id_oeuvre={id_oeuvre}")
+
+    for colonne, mediane in artefacts["medianes"].items():
+        oeuvre[colonne] = oeuvre[colonne].fillna(mediane).astype(float)
+
+    genres = pd.read_sql(REQUETE_GENRES_PAR_ID, engine, params=params)
+    acteurs = pd.read_sql(REQUETE_ACTEURS_PAR_ID, engine, params=params)
+    realisateurs = pd.read_sql(REQUETE_REALISATEURS_PAR_ID, engine, params=params)
+    productions = pd.read_sql(REQUETE_PRODUCTIONS_PAR_ID, engine, params=params)
+
+    oeuvre, _ = _ajouter_genres(oeuvre, genres, colonnes_genre_train=artefacts["colonnes_genre"])
+
+    for liaisons, colonne_nom, prefixe, cle_stats in [
+        (acteurs, "nom_complet", "acteur", "stats_acteur"),
+        (realisateurs, "nom_complet", "realisateur", "stats_realisateur"),
+        (productions, "nom_production", "production", "stats_production"),
+        (genres, "nom_genre", "genre_cible", "stats_genre_cible"),
+    ]:
+        oeuvre = _ajouter_features_entite(
+            oeuvre,
+            liaisons,
+            colonne_nom,
+            prefixe,
+            artefacts[cle_stats],
+            artefacts["moyenne_cible_globale"],
+        )
+
+    oeuvre["mots_cles_texte"] = (
+        oeuvre["mot_cle_1"].fillna("")
+        + " "
+        + oeuvre["mot_cle_2"].fillna("")
+        + " "
+        + oeuvre["mot_cle_3"].fillna("")
+    )
+    tfidf = artefacts["vectoriseur_motcle"].transform(oeuvre["mots_cles_texte"])
+    colonnes_motcle = [
+        f"motcle_{m}" for m in artefacts["vectoriseur_motcle"].get_feature_names_out()
+    ]
+    motcle_df = pd.DataFrame(tfidf.toarray(), columns=colonnes_motcle, index=oeuvre.index)
+
+    X = pd.concat([oeuvre, motcle_df], axis=1)
+    # meme ordre de colonnes que pendant l'entrainement, sinon le modele
+    # ne comprend plus quelle colonne est quoi
+    return X[artefacts["colonnes_finales"]]

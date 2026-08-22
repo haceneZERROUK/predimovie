@@ -32,11 +32,13 @@ services:
 
   backend:
     build:
-      context: ./backend
+      context: .
+      dockerfile: ./backend/Dockerfile
     env_file: .env
     environment:
       DATABASE_URL: ${DATABASE_URL}
       MLFLOW_TRACKING_URI: http://mlflow:5000
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
     ports:
       - "${BACKEND_PORT:-8000}:8000"
     depends_on:

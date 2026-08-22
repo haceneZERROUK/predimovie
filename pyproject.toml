@@ -25,6 +25,8 @@ dependencies = [
     "rapidfuzz>=3.14.5",
     "xgboost>=3.2.0",
     "catboost>=1.2.10",
+    "pyjwt>=2.13.0",
+    "bcrypt>=5.0.0",
 ]
 
 [project.optional-dependencies]
@@ -51,6 +53,11 @@ extend-exclude = ["frontend_django/*/migrations", "database/alembic/versions"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
+
+[tool.ruff.lint.flake8-bugbear]
+# Depends(...) en valeur par defaut, c'est l'idiome standard de FastAPI,
+# pas le piege habituel des arguments par defaut mutables
+extend-immutable-calls = ["fastapi.Depends"]
 
 [tool.black]
 line-length = 100

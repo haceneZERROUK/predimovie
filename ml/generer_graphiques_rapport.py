@@ -161,7 +161,7 @@ def graphique_predictions_vs_reel(run_id_champion: str, nom_champion: str):
     )
     modele = joblib.load(chemin_modele)
 
-    _, X_test, _, y_test = charger_dataset_train_test()
+    _, X_test, _, y_test, _ = charger_dataset_train_test()
     predictions = np.expm1(modele.predict(X_test)).clip(min=0)
 
     fig, ax = plt.subplots(figsize=(7, 7))
@@ -180,7 +180,7 @@ def graphique_predictions_vs_reel(run_id_champion: str, nom_champion: str):
 
 
 def graphique_distribution_cible():
-    _, _, y_train, y_test = charger_dataset_train_test()
+    _, _, y_train, y_test, _ = charger_dataset_train_test()
     y = pd.concat([y_train, y_test])
     fig, axes = plt.subplots(1, 2, figsize=(12, 5))
     axes[0].hist(y, bins=60, color=COULEUR_PRINCIPALE)
