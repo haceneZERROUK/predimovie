@@ -1,7 +1,7 @@
 {% extends "predictions/base.html" %}
 {% block contenu %}
 <h1>Bienvenue</h1>
-<p>Connexion OK. Le top 10 des predictions arrive a l'etape suivante.</p>
+<p><a href="{% url 'predictions:top10' %}">Voir le top 10 des prochaines sorties</a></p>
 {% if request.session.role == "admin" %}
 <p><em>Compte admin : les pages de gestion arrivent aussi a une prochaine etape.</em></p>
 {% endif %}

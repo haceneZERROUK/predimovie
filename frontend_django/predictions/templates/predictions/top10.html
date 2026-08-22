@@ -1,0 +1,21 @@
+{% extends "predictions/base.html" %}
+{% block contenu %}
+<h1>Top 10 des prochaines sorties</h1>
+<p>Films pas encore sortis, classes par entrees premiere semaine predites par le modele.</p>
+
+{% if predictions %}
+<table>
+  <tr><th>#</th><th>Film</th><th>Date de sortie</th><th>Entrees predites</th></tr>
+  {% for prediction in predictions %}
+  <tr>
+    <td>{{ forloop.counter }}</td>
+    <td>{{ prediction.nom_francais }}</td>
+    <td>{{ prediction.date_sortie|default:"inconnue" }}</td>
+    <td>{{ prediction.entrees_premiere_semaine_predites }}</td>
+  </tr>
+  {% endfor %}
+</table>
+{% else %}
+<p>Aucune prediction disponible pour le moment.</p>
+{% endif %}
+{% endblock %}

@@ -21,6 +21,17 @@ def login(mail: str, mot_de_passe: str) -> dict:
     return reponse.json()
 
 
+def films_a_venir(token: str) -> list[dict]:
+    reponse = httpx.get(
+        f"{settings.BACKEND_API_URL}/films-a-venir",
+        headers={"Authorization": f"Bearer {token}"},
+        timeout=10,
+    )
+    if reponse.status_code != 200:
+        raise ErreurAPI(reponse.json().get("detail", "Erreur de recuperation des films"))
+    return reponse.json()
+
+
 def predict(id_oeuvre: int, token: str) -> dict:
     reponse = httpx.post(
         f"{settings.BACKEND_API_URL}/predict",

@@ -26,7 +26,7 @@
 {% if request.session.token %}
 <nav>
   <div>Connecte en tant que <strong>{{ request.session.mail }}</strong> ({{ request.session.role }})</div>
-  <div><a href="{% url 'predictions:accueil' %}">Accueil</a><a href="{% url 'predictions:logout' %}">Deconnexion</a></div>
+  <div><a href="{% url 'predictions:accueil' %}">Accueil</a><a href="{% url 'predictions:top10' %}">Top 10</a><a href="{% url 'predictions:logout' %}">Deconnexion</a></div>
 </nav>
 {% endif %}
 

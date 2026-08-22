@@ -79,3 +79,70 @@ def test_logout_vide_la_session(client):
     reponse = client.get(reverse("predictions:logout"))
     assert reponse.status_code == 302
     assert "token" not in client.session
+
+
+def _connecte(client):
+    session = client.session
+    session["token"] = FAUX_TOKEN
+    session["mail"] = "cinema@example.com"
+    session["role"] = "cinema"
+    session.save()
+
+
+@pytest.mark.django_db
+def test_top10_redirige_si_pas_connecte(client):
+    reponse = client.get(reverse("predictions:top10"))
+    assert reponse.status_code == 302
+
+
+@pytest.mark.django_db
+def test_top10_trie_par_entrees_predites_decroissant(client, monkeypatch):
+    _connecte(client)
+    faux_films = [
+        {"id_oeuvre": 1, "nom_francais": "Petit film"},
+        {"id_oeuvre": 2, "nom_francais": "Gros film"},
+    ]
+    fausses_predictions = {
+        1: {
+            "id_oeuvre": 1,
+            "nom_francais": "Petit film",
+            "entrees_premiere_semaine_predites": 1000,
+        },
+        2: {
+            "id_oeuvre": 2,
+            "nom_francais": "Gros film",
+            "entrees_premiere_semaine_predites": 900000,
+        },
+    }
+    monkeypatch.setattr("predictions.views.films_a_venir", lambda token: faux_films)
+    monkeypatch.setattr(
+        "predictions.views.appel_predict", lambda id_oeuvre, token: fausses_predictions[id_oeuvre]
+    )
+
+    reponse = client.get(reverse("predictions:top10"))
+    assert reponse.status_code == 200
+    predictions = reponse.context["predictions"]
+    assert [p["id_oeuvre"] for p in predictions] == [2, 1]
+
+
+@pytest.mark.django_db
+def test_top10_ignore_un_film_dont_la_prediction_echoue(client, monkeypatch):
+    _connecte(client)
+    faux_films = [
+        {"id_oeuvre": 1, "nom_francais": "Film qui plante"},
+        {"id_oeuvre": 2, "nom_francais": "Film ok"},
+    ]
+
+    def fausse_prediction(id_oeuvre, token):
+        if id_oeuvre == 1:
+            raise ErreurAPI("Film introuvable")
+        return {"id_oeuvre": 2, "nom_francais": "Film ok", "entrees_premiere_semaine_predites": 500}
+
+    monkeypatch.setattr("predictions.views.films_a_venir", lambda token: faux_films)
+    monkeypatch.setattr("predictions.views.appel_predict", fausse_prediction)
+
+    reponse = client.get(reverse("predictions:top10"))
+    assert reponse.status_code == 200
+    predictions = reponse.context["predictions"]
+    assert len(predictions) == 1
+    assert predictions[0]["id_oeuvre"] == 2

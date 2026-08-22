@@ -1,6 +1,8 @@
 # Ce module fait le lien entre JPBOX et TMDB : il récupère les infos
 # des 2 sources, vérifie qu'elles parlent bien du même film, puis
 # enregistre le tout dans la base de données (via les modèles SQLAlchemy).
+from datetime import date
+
 from sqlalchemy.orm import Session
 
 from data_engineering import imdb, jpbox, tmdb
@@ -98,13 +100,18 @@ def enrichir_avec_tmdb(titre: str, annee: int | None) -> dict | None:
 
     # Le texte JPBOX ne donne pas toujours l'année (titre tronqué, pas de
     # parenthèse...). TMDB donne une vraie date de sortie, plus fiable.
-    date_sortie = details.get("release_date") or ""
-    annee_sortie_tmdb = int(date_sortie[:4]) if len(date_sortie) >= 4 else None
+    # On gardait avant seulement l'année en jetant le jour/mois : corrigé,
+    # on garde la date complète (utile pour savoir quel film sort quel
+    # mercredi, pas juste quelle année).
+    texte_date_sortie = details.get("release_date") or ""
+    date_sortie_tmdb = date.fromisoformat(texte_date_sortie) if texte_date_sortie else None
+    annee_sortie_tmdb = date_sortie_tmdb.year if date_sortie_tmdb else None
 
     return {
         "id_tmdb": resultat["id"],
         "imdb_id": details.get("imdb_id"),
         "annee_sortie": annee_sortie_tmdb,
+        "date_sortie": date_sortie_tmdb,
         "synopsis": details.get("overview"),
         "note_tmdb": details.get("vote_average"),
         "genres": [g["name"] for g in details.get("genres", [])],
@@ -166,6 +173,8 @@ def _enrichir_oeuvre(
         oeuvre.note_tmdb = infos_tmdb["note_tmdb"]
         if oeuvre.annee_sortie is None:
             oeuvre.annee_sortie = infos_tmdb["annee_sortie"]
+        if oeuvre.date_sortie is None:
+            oeuvre.date_sortie = infos_tmdb["date_sortie"]
         if notes_imdb and infos_tmdb.get("imdb_id"):
             oeuvre.note_imdb = notes_imdb.get(infos_tmdb["imdb_id"])
 

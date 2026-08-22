@@ -1,4 +1,6 @@
-from sqlalchemy import Float, ForeignKey, Integer, String, Text
+from datetime import date
+
+from sqlalchemy import Date, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database.base import Base
@@ -20,6 +22,11 @@ class Oeuvre(Base):
     nom_original: Mapped[str] = mapped_column(String(255), nullable=True)
     synopsis: Mapped[str] = mapped_column(Text, nullable=True)
     annee_sortie: Mapped[int] = mapped_column(Integer, nullable=True)
+    # Date de sortie complete (jour/mois/annee), recuperee depuis TMDB
+    # (champ release_date). Avant, seule l'annee etait gardee : impossible
+    # de savoir quel film sort quel mercredi. nullable=True pour les films
+    # deja en base avant l'ajout de cette colonne (pas encore rattrapes).
+    date_sortie: Mapped[date] = mapped_column(Date, nullable=True)
     # Note communautaire TMDB (sur 10), récupérée avec le reste des infos TMDB.
     note_tmdb: Mapped[float] = mapped_column(Float, nullable=True)
     # Note IMDb (sur 10), récupérée via le fichier officiel IMDb (imdb.py).
