@@ -12,7 +12,7 @@ def connexion_requise(vue):
     @wraps(vue)
     def wrapper(request, *args, **kwargs):
         if not request.session.get("token"):
-            messages.warning(request, "Connecte-toi pour acceder a cette page.")
+            messages.warning(request, "Connectez-vous pour acceder a cette page.")
             return redirect("predictions:login")
         return vue(request, *args, **kwargs)
 
@@ -23,7 +23,7 @@ def admin_requis(vue):
     @wraps(vue)
     def wrapper(request, *args, **kwargs):
         if not request.session.get("token"):
-            messages.warning(request, "Connecte-toi pour acceder a cette page.")
+            messages.warning(request, "Connectez-vous pour acceder a cette page.")
             return redirect("predictions:login")
         if request.session.get("role") != "admin":
             messages.error(request, "Reserve aux administrateurs.")

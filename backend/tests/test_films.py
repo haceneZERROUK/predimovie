@@ -25,7 +25,7 @@ def _get_ou_creer_nature(session):
     return nature
 
 
-def _creer_film(nom: str, date_sortie: date | None) -> Oeuvre:
+def _creer_film(nom: str, date_sortie: date | None, synopsis: str | None = None) -> Oeuvre:
     session = SessionLocal()
     nature = _get_ou_creer_nature(session)
     oeuvre = Oeuvre(
@@ -33,6 +33,7 @@ def _creer_film(nom: str, date_sortie: date | None) -> Oeuvre:
         nature=nature,
         entrees_premiere_semaine=None,
         date_sortie=date_sortie,
+        synopsis=synopsis,
     )
     session.add(oeuvre)
     session.commit()
@@ -72,6 +73,15 @@ def film_sans_date():
 
 
 @pytest.fixture
+def film_avec_synopsis():
+    oeuvre = _creer_film(
+        "Film Test Avec Synopsis", _prochain_mercredi(), synopsis="Un synopsis de test."
+    )
+    yield oeuvre
+    _supprimer_film(oeuvre)
+
+
+@pytest.fixture
 def film_dans_2_mois():
     """Film pas encore sorti mais pas du mercredi a venir non plus (sort
     dans 2 mois) : on ne veut que les sorties de la semaine, pas tout ce
@@ -92,6 +102,14 @@ def test_films_a_venir_liste_bien_le_film_pas_sorti(film_pas_sorti):
     assert reponse.status_code == 200
     ids = [f["id_oeuvre"] for f in reponse.json()]
     assert film_pas_sorti.id_oeuvre in ids
+
+
+def test_films_a_venir_renvoie_le_synopsis(film_avec_synopsis):
+    token = creer_token(mail="cinema@example.com", role="cinema")
+    reponse = client.get("/films-a-venir", headers={"Authorization": f"Bearer {token}"})
+    assert reponse.status_code == 200
+    film = next(f for f in reponse.json() if f["id_oeuvre"] == film_avec_synopsis.id_oeuvre)
+    assert film["synopsis"] == "Un synopsis de test."
 
 
 def test_films_a_venir_exclut_le_film_deja_sorti(film_deja_sorti_sans_entrees):

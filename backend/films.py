@@ -37,7 +37,10 @@ def films_a_venir(_utilisateur: dict = Depends(utilisateur_connecte)):
         )
         return [
             FilmAVenir(
-                id_oeuvre=f.id_oeuvre, nom_francais=f.nom_francais, date_sortie=f.date_sortie
+                id_oeuvre=f.id_oeuvre,
+                nom_francais=f.nom_francais,
+                date_sortie=f.date_sortie,
+                synopsis=f.synopsis,
             )
             for f in films
         ]

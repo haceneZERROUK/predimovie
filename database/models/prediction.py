@@ -10,9 +10,10 @@ class Prediction(Base):
     """Le resultat d'une prediction du modele ML pour un film, avec la
     date a laquelle elle a ete calculee.
 
-    Alimentee chaque lundi soir par un job qui fait tourner le modele sur
-    les films a l'affiche, pour que les cinemas voient une prediction deja
-    calculee sans attendre un appel au modele.
+    Alimentee via /predictions/relancer (backend/predictions_admin.py),
+    declenche a la main par un admin (bouton "Relancer les predictions"),
+    pour que les cinemas voient une prediction deja calculee sans attendre
+    un appel au modele.
 
     nom_francais est duplique depuis `oeuvre` (au lieu d'une jointure) pour
     que l'appli client puisse afficher le nom du film directement.

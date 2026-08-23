@@ -28,6 +28,7 @@ class FilmAVenir(BaseModel):
     id_oeuvre: int
     nom_francais: str
     date_sortie: date | None = None
+    synopsis: str | None = None
 
 
 class RelanceReponse(BaseModel):

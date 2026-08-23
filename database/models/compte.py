@@ -20,9 +20,8 @@ class Compte(Base):
     """Un compte de connexion à l'application Django.
 
     Choix de conception : un compte = un cinéma (pas de table `cinema`
-    séparée). Les colonnes `nom_cinema`/`adresse` ne sont donc renseignées
-    que pour les comptes de rôle CINEMA ; elles restent vides (nullable)
-    pour le compte ADMIN.
+    séparée). La colonne `nom_cinema` n'est donc renseignée que pour les
+    comptes de rôle CINEMA ; elle reste vide (nullable) pour le compte ADMIN.
     """
 
     __tablename__ = "compte"
@@ -34,4 +33,6 @@ class Compte(Base):
     nom_cinema: Mapped[str] = mapped_column(String(255), nullable=True)
     date_inscription: Mapped[date] = mapped_column(Date, nullable=False)
     derniere_connexion: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+    # sert a desactiver un compte sans le supprimer ; non exploite cote
+    # backend/frontend pour l'instant (aucune route ne le passe a False)
     statut_compte: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)

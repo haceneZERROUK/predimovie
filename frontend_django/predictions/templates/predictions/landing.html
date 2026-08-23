@@ -1,0 +1,85 @@
+{% load static %}
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Predimovie</title>
+<link rel="icon" type="image/svg+xml" href="{% static 'predictions/logo.svg' %}">
+<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  body { font-family: 'JetBrains Mono', ui-monospace, 'SF Mono', 'Courier New', monospace; background: #08090b; }
+  .bg-ink { background: #08090b; }
+  .bg-panel { background: #0c0d10; }
+  .border-hair { border-color: #27272a; }
+  .border-hair2 { border-color: #18181b; }
+  .text-ink-primary { color: #fafafa; }
+  .text-ink-secondary { color: #a1a1aa; }
+  .text-ink-tertiary { color: #71717a; }
+  .text-accent { color: #8b5cf6; }
+  .bg-accent { background: #8b5cf6; }
+  .bg-accent:hover { background: #7c3aed; }
+  .label-caps { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; }
+  a { color: #8b5cf6; }
+  a:hover { color: #a78bfa; }
+  .hero {
+    background-image: linear-gradient(180deg, rgba(8,9,11,0.15) 0%, rgba(8,9,11,0.4) 55%, #08090b 100%),
+      url('{% static "predictions/hero-salle.png" %}');
+    background-size: cover;
+    background-position: center;
+  }
+</style>
+</head>
+<body class="bg-ink">
+
+<header class="px-6 py-4 flex items-center justify-between">
+  <div class="flex items-center gap-2">
+    <img src="{% static 'predictions/logo.svg' %}" alt="" class="w-6 h-6">
+    <span class="text-base font-bold text-ink-primary tracking-tight">PREDIMOVIE</span>
+  </div>
+  <a href="{% url 'predictions:login' %}"
+    class="bg-accent text-ink-primary px-4 py-2 label-caps font-semibold transition">
+    Se connecter
+  </a>
+</header>
+
+<section class="hero flex items-end" style="min-height: 78vh;">
+  <div class="px-6 pb-20 max-w-3xl">
+    <div class="label-caps text-accent mb-4">outil de programmation pour cinemas independants</div>
+    <h1 class="text-4xl md:text-5xl font-bold text-ink-primary leading-tight mb-6">
+      Savoir combien d&rsquo;entrées attendre,<br>avant de programmer.
+    </h1>
+    <p class="text-ink-secondary text-base max-w-xl mb-8">
+      Chaque mercredi, Predimovie estime la fréquentation première semaine des films qui sortent,
+      pour aider les petites salles indépendantes à choisir quoi programmer.
+    </p>
+    <a href="{% url 'predictions:login' %}"
+      class="inline-block bg-accent text-ink-primary px-6 py-3 label-caps font-semibold transition">
+      Accès cinéma partenaire &rarr;
+    </a>
+  </div>
+</section>
+
+<section class="px-6 py-20 max-w-3xl mx-auto">
+  <div class="flex items-center gap-2 mb-1">
+    <span class="w-2 h-2 bg-accent inline-block"></span>
+    <span class="label-caps text-ink-tertiary">predimovie / ce qu&rsquo;on fait</span>
+  </div>
+  <h2 class="text-2xl font-bold text-ink-primary mb-6">Qui sommes-nous</h2>
+  <p class="text-ink-secondary mb-6 max-w-2xl">
+    Predimovie est un outil d&rsquo;aide à la programmation pour les petits cinémas indépendants —
+    pas une application de recommandation grand public. Avant chaque sortie du mercredi, on estime
+    combien d&rsquo;entrées un film devrait faire en première semaine, pour donner un repère chiffré
+    en plus du flair du programmateur, pas pour le remplacer.
+  </p>
+  <p class="text-ink-secondary max-w-2xl">
+    Cette estimation s&rsquo;appuie sur de l&rsquo;intelligence artificielle : un modèle de machine
+    learning qui apprend des sorties passées pour prédire la fréquentation des sorties à venir.
+  </p>
+</section>
+
+</body>
+</html>

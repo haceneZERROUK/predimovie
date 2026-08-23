@@ -4,7 +4,7 @@
   <span class="w-2 h-2 bg-accent inline-block"></span>
   <span class="label-caps text-ink-tertiary">predimovie / sorties</span>
 </div>
-<h1 class="text-xl font-bold text-ink-primary mb-6">SORTIES.MERCREDI</h1>
+<h1 class="text-xl font-bold text-ink-primary mb-6">Sortie du mercredi {{ prochain_mercredi|date:"d/m/Y" }}</h1>
 
 {% if predictions %}
 <table class="w-full border-collapse">
@@ -21,7 +21,14 @@
     {% for prediction in predictions %}
     <tr>
       <td class="num py-3 px-2 border-b border-hair2 text-accent">{{ forloop.counter|stringformat:"02d" }}</td>
-      <td class="py-3 px-2 border-b border-hair2 text-ink-primary">{{ prediction.nom_francais }}</td>
+      <td class="relative hover-target cursor-help py-3 px-2 border-b border-hair2 text-ink-primary">
+        <span class="border-b border-dotted border-hair">{{ prediction.nom_francais }}</span>
+        <span class="synopsis-bubble absolute z-20 left-2 w-72 bg-panel border border-hair p-3 text-xs leading-relaxed
+          {% if forloop.revcounter0 < 4 %}bottom-full mb-1{% else %}top-full mt-1{% endif %}
+          {% if prediction.synopsis %}text-ink-secondary{% else %}text-ink-muted italic{% endif %}">
+          {{ prediction.synopsis|default:"Synopsis non disponible pour ce film." }}
+        </span>
+      </td>
       <td class="num py-3 px-2 border-b border-hair2 text-ink-tertiary">{{ prediction.date_sortie|date:"d/m/Y"|default:"inconnue" }}</td>
       <td class="num py-3 px-2 border-b border-hair2 text-right text-ink-secondary">{{ prediction.entrees_premiere_semaine_predites }}</td>
       <td class="py-3 px-2 border-b border-hair2 text-right">

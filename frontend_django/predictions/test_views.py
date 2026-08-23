@@ -1,6 +1,7 @@
 # Tests des vues de connexion/deconnexion. On ne tape jamais le vrai
 # backend FastAPI ici : on remplace appel_login par une fausse fonction
 # (monkeypatch) pour rester rapide et independant du reseau.
+import re
 from datetime import date
 
 import jwt
@@ -19,6 +20,13 @@ FAUX_TOKEN_ADMIN = jwt.encode(
     "peu-importe-cle-de-test-bidon",
     algorithm="HS256",
 )
+
+
+@pytest.mark.django_db
+def test_landing_accessible_sans_etre_connecte(client):
+    reponse = client.get(reverse("predictions:landing"))
+    assert reponse.status_code == 200
+    assert b"Predimovie" in reponse.content
 
 
 @pytest.mark.django_db
@@ -160,6 +168,81 @@ def test_top10_convertit_la_date_iso_en_date_pour_l_affichage_francais(client, m
     assert reponse.status_code == 200
     assert reponse.context["predictions"][0]["date_sortie"] == date(2026, 12, 16)
     assert "16/12/2026" in reponse.content.decode()
+
+
+@pytest.mark.django_db
+def test_top10_affiche_le_synopsis_au_survol(client, monkeypatch):
+    _connecte(client)
+    faux_films = [{"id_oeuvre": 1, "nom_francais": "Film", "synopsis": "Un film mysterieux."}]
+    monkeypatch.setattr("predictions.views.films_a_venir", lambda token: faux_films)
+    monkeypatch.setattr(
+        "predictions.views.appel_predict",
+        lambda id_oeuvre, token: {
+            "id_oeuvre": 1,
+            "nom_francais": "Film",
+            "entrees_premiere_semaine_predites": 100,
+        },
+    )
+
+    reponse = client.get(reverse("predictions:top10"))
+    assert reponse.status_code == 200
+    assert reponse.context["predictions"][0]["synopsis"] == "Un film mysterieux."
+    assert "Un film mysterieux." in reponse.content.decode()
+
+
+@pytest.mark.django_db
+def test_top10_bulle_avec_message_de_repli_si_pas_de_synopsis(client, monkeypatch):
+    """Meme sans synopsis en base (film pas matche sur TMDB), la bulle
+    doit s'afficher au survol, avec un message de repli plutot que rien
+    du tout : sinon on dirait que le survol ne marche pas sur ces films."""
+    _connecte(client)
+    faux_films = [{"id_oeuvre": 1, "nom_francais": "Film Sans Synopsis"}]
+    monkeypatch.setattr("predictions.views.films_a_venir", lambda token: faux_films)
+    monkeypatch.setattr(
+        "predictions.views.appel_predict",
+        lambda id_oeuvre, token: {
+            "id_oeuvre": 1,
+            "nom_francais": "Film Sans Synopsis",
+            "entrees_premiere_semaine_predites": 100,
+        },
+    )
+
+    reponse = client.get(reverse("predictions:top10"))
+    assert reponse.status_code == 200
+    assert reponse.context["predictions"][0]["synopsis"] is None
+    assert b'class="synopsis-bubble' in reponse.content
+    assert "Synopsis non disponible" in reponse.content.decode()
+
+
+@pytest.mark.django_db
+def test_top10_bulle_s_ouvre_vers_le_haut_pour_les_dernieres_lignes(client, monkeypatch):
+    """Pres du bas du tableau, la bulle doit s'ouvrir vers le haut (sinon
+    elle sort de la page et se fait couper par le bas de l'ecran)."""
+    _connecte(client)
+    faux_films = [
+        {"id_oeuvre": i, "nom_francais": f"Film {i}", "synopsis": f"Synopsis {i}"}
+        for i in range(1, 7)
+    ]
+    monkeypatch.setattr("predictions.views.films_a_venir", lambda token: faux_films)
+    monkeypatch.setattr(
+        "predictions.views.appel_predict",
+        lambda id_oeuvre, token: {
+            "id_oeuvre": id_oeuvre,
+            "nom_francais": f"Film {id_oeuvre}",
+            # entrees decroissantes pour garder l'ordre 1..6 apres le tri
+            "entrees_premiere_semaine_predites": 1000 - id_oeuvre,
+        },
+    )
+
+    reponse = client.get(reverse("predictions:top10"))
+    assert reponse.status_code == 200
+    contenu = reponse.content.decode()
+
+    # chaque bulle "<span class="synopsis-bubble ... top-full|bottom-full ...">Synopsis N</span>"
+    bulles = re.findall(r'class="synopsis-bubble([^"]*)"[^>]*>\s*Synopsis (\d)', contenu)
+    classes_par_film = {numero: classes for classes, numero in bulles}
+    assert "top-full" in classes_par_film["1"]
+    assert "bottom-full" in classes_par_film["6"]
 
 
 @pytest.mark.django_db

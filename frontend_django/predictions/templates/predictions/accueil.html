@@ -1,16 +1,39 @@
 {% extends "predictions/base.html" %}
+{% load static %}
 {% block contenu %}
 <div class="flex items-center gap-2 mb-1">
   <span class="w-2 h-2 bg-accent inline-block"></span>
   <span class="label-caps text-ink-tertiary">predimovie / accueil</span>
 </div>
 <h1 class="text-xl font-bold text-ink-primary mb-6">BIENVENUE</h1>
-<a href="{% url 'predictions:top10' %}" class="text-accent text-sm">
-  Voir les sorties du mercredi prochain &rarr;
-</a>
+
+<div class="relative flex items-center justify-center border border-hair"
+  style="height: 320px; background-image: linear-gradient(180deg, rgba(8,9,11,0.5) 0%, rgba(8,9,11,0.75) 100%), url('{% static "predictions/hero-salle.png" %}'); background-size: cover; background-position: center;">
+  <a href="{% url 'predictions:top10' %}"
+    class="bg-accent text-ink-primary px-6 py-3 label-caps font-semibold transition">
+    Voir les sorties du mercredi prochain &rarr;
+  </a>
+</div>
+
 {% if request.session.role == "admin" %}
-<p class="text-ink-tertiary text-sm mt-4">
+<p class="text-ink-tertiary text-sm mt-6">
   Compte admin : historique predit/reel, monitoring et relance des predictions dans la barre du haut.
 </p>
 {% endif %}
+
+<div class="flex items-center gap-2 mb-1 mt-16">
+  <span class="w-2 h-2 bg-accent inline-block"></span>
+  <span class="label-caps text-ink-tertiary">predimovie / ce qu&rsquo;on fait</span>
+</div>
+<h2 class="text-lg font-bold text-ink-primary mb-6">Qui sommes-nous</h2>
+<p class="text-ink-secondary mb-6 max-w-2xl text-sm">
+  Predimovie est un outil d&rsquo;aide à la programmation pour les petits cinémas indépendants —
+  pas une application de recommandation grand public. Avant chaque sortie du mercredi, on estime
+  combien d&rsquo;entrées un film devrait faire en première semaine, pour donner un repère chiffré
+  en plus du flair du programmateur, pas pour le remplacer.
+</p>
+<p class="text-ink-secondary max-w-2xl text-sm">
+  Cette estimation s&rsquo;appuie sur de l&rsquo;intelligence artificielle : un modèle de machine
+  learning qui apprend des sorties passées pour prédire la fréquentation des sorties à venir.
+</p>
 {% endblock %}

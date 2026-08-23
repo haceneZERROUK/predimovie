@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 import jwt
 from django.contrib import messages
@@ -18,6 +18,12 @@ from predictions.api_client import relancer_predictions as appel_relancer
 from predictions.api_client import supprimer_compte as appel_supprimer_compte
 from predictions.decorators import admin_requis, connexion_requise
 from predictions.metrics_parser import parser_metriques
+
+
+def landing_view(request):
+    """Page publique (pas besoin d'etre connecte) : presente le produit
+    avant d'inviter a se connecter."""
+    return render(request, "predictions/landing.html")
 
 
 def login_view(request):
@@ -57,14 +63,23 @@ def accueil_view(request):
     return render(request, "predictions/accueil.html")
 
 
+def _prochain_mercredi():
+    """Meme calcul que backend/films.py et data_engineering/pipeline.py :
+    duplique plutot que partage, chaque service reste independant."""
+    aujourdhui = date.today()
+    jours_a_ajouter = (2 - aujourdhui.weekday()) % 7
+    return aujourdhui + timedelta(days=jours_a_ajouter)
+
+
 @connexion_requise
 def top10_view(request):
     token = request.session["token"]
+    contexte = {"prochain_mercredi": _prochain_mercredi()}
     try:
         films = films_a_venir(token)
     except ErreurAPI as erreur:
         messages.error(request, str(erreur))
-        return render(request, "predictions/top10.html", {"predictions": []})
+        return render(request, "predictions/top10.html", {**contexte, "predictions": []})
 
     # on lance une prediction par film pas encore sorti ; si l'un d'eux
     # plante (film mal renseigne en base par exemple), on le passe et on
@@ -82,6 +97,7 @@ def top10_view(request):
         resultat["date_sortie"] = (
             date.fromisoformat(texte_date_sortie) if texte_date_sortie else None
         )
+        resultat["synopsis"] = film.get("synopsis")
         predictions.append(resultat)
 
     # /films-a-venir ne renvoie deja que les films du mercredi a venir (pas
@@ -100,7 +116,7 @@ def top10_view(request):
             else 0
         )
 
-    return render(request, "predictions/top10.html", {"predictions": predictions})
+    return render(request, "predictions/top10.html", {**contexte, "predictions": predictions})
 
 
 @admin_requis
