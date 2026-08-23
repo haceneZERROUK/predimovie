@@ -1,0 +1,12 @@
+# Dit a Grafana de charger tous les .json de ce dossier comme dashboards
+# au demarrage, plutot que de les recreer a la main dans l'interface.
+apiVersion: 1
+
+providers:
+  - name: Predimovie
+    orgId: 1
+    folder: ""
+    type: file
+    updateIntervalSeconds: 30
+    options:
+      path: /etc/grafana/provisioning/dashboards

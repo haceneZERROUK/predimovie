@@ -89,6 +89,16 @@ services:
     depends_on:
       - scraper
 
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    depends_on:
+      - backend
+
   grafana:
     image: grafana/grafana:latest
     env_file: .env
@@ -100,6 +110,9 @@ services:
     volumes:
       - grafana_data:/var/lib/grafana
       - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+    depends_on:
+      - prometheus
+      - postgres
 
 volumes:
   postgres_data:
@@ -107,3 +120,4 @@ volumes:
   mlflow_artifacts:
   n8n_data:
   grafana_data:
+  prometheus_data:
