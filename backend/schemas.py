@@ -40,3 +40,18 @@ class HistoriquePrediction(BaseModel):
     entrees_premiere_semaine_reelles: int
     date_prediction: datetime
     ecart: int
+
+
+class CompteCreationDemande(BaseModel):
+    mail: str
+    mot_de_passe: str
+    nom_cinema: str
+
+
+class CompteReponse(BaseModel):
+    id_compte: int
+    mail: str
+    nom_cinema: str | None
+    date_inscription: date
+    derniere_connexion: datetime | None
+    statut_compte: bool

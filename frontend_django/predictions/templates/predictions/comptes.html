@@ -1,0 +1,61 @@
+{% extends "predictions/base.html" %}
+{% block contenu %}
+<div class="flex items-center justify-between mb-6">
+  <div>
+    <h1 class="text-2xl font-bold text-white mb-2">Comptes cinema</h1>
+    <p class="text-gray-400">La base des cinemas clients.</p>
+  </div>
+  <a href="{% url 'predictions:creer_compte' %}"
+    class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition text-sm">
+    + Nouveau cinema
+  </a>
+</div>
+
+{% if comptes %}
+<div class="bg-gray-800 rounded-lg overflow-hidden">
+  <table class="w-full">
+    <thead>
+      <tr class="bg-gray-700">
+        <th class="px-6 py-3 text-left text-sm font-semibold text-gray-300">Cinema</th>
+        <th class="px-6 py-3 text-left text-sm font-semibold text-gray-300">Mail</th>
+        <th class="px-6 py-3 text-left text-sm font-semibold text-gray-300">Inscrit le</th>
+        <th class="px-6 py-3 text-left text-sm font-semibold text-gray-300">Derniere connexion</th>
+        <th class="px-6 py-3 text-left text-sm font-semibold text-gray-300">Statut</th>
+        <th class="px-6 py-3"></th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-700">
+      {% for compte in comptes %}
+      <tr class="text-gray-300">
+        <td class="px-6 py-4 font-medium text-white">{{ compte.nom_cinema }}</td>
+        <td class="px-6 py-4">{{ compte.mail }}</td>
+        <td class="px-6 py-4 text-sm">{{ compte.date_inscription|date:"d/m/Y" }}</td>
+        <td class="px-6 py-4 text-sm text-gray-400">
+          {{ compte.derniere_connexion|date:"d/m/Y H:i"|default:"jamais connecte" }}
+        </td>
+        <td class="px-6 py-4">
+          {% if compte.statut_compte %}
+          <span class="text-green-400 text-sm">actif</span>
+          {% else %}
+          <span class="text-red-400 text-sm">desactive</span>
+          {% endif %}
+        </td>
+        <td class="px-6 py-4 text-right">
+          <form method="post"
+            action="{% url 'predictions:supprimer_compte' compte.id_compte %}"
+            onsubmit="return confirm('Supprimer le compte de {{ compte.nom_cinema|escapejs }} ?');">
+            {% csrf_token %}
+            <button type="submit" class="text-red-400 hover:text-red-300 transition text-sm">
+              Supprimer
+            </button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p class="text-gray-400">Aucun cinema client pour l'instant.</p>
+{% endif %}
+{% endblock %}

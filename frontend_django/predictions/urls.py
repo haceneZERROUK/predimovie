@@ -12,4 +12,9 @@ urlpatterns = [
     path("historique/", views.historique_view, name="historique"),
     path("relancer/", views.relancer_view, name="relancer"),
     path("monitoring/", views.monitoring_view, name="monitoring"),
+    path("comptes/", views.comptes_view, name="comptes"),
+    path("comptes/creer/", views.creer_compte_view, name="creer_compte"),
+    path(
+        "comptes/<int:id_compte>/supprimer/", views.supprimer_compte_view, name="supprimer_compte"
+    ),
 ]

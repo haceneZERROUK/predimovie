@@ -66,6 +66,39 @@ def historique_predictions(token: str) -> list[dict]:
     return reponse.json()
 
 
+def lister_comptes(token: str) -> list[dict]:
+    reponse = httpx.get(
+        f"{settings.BACKEND_API_URL}/comptes",
+        headers={"Authorization": f"Bearer {token}"},
+        timeout=10,
+    )
+    if reponse.status_code != 200:
+        raise ErreurAPI(reponse.json().get("detail", "Erreur de recuperation des comptes"))
+    return reponse.json()
+
+
+def creer_compte(mail: str, mot_de_passe: str, nom_cinema: str, token: str) -> dict:
+    reponse = httpx.post(
+        f"{settings.BACKEND_API_URL}/comptes",
+        json={"mail": mail, "mot_de_passe": mot_de_passe, "nom_cinema": nom_cinema},
+        headers={"Authorization": f"Bearer {token}"},
+        timeout=10,
+    )
+    if reponse.status_code != 201:
+        raise ErreurAPI(reponse.json().get("detail", "Erreur de creation du compte"))
+    return reponse.json()
+
+
+def supprimer_compte(id_compte: int, token: str) -> None:
+    reponse = httpx.delete(
+        f"{settings.BACKEND_API_URL}/comptes/{id_compte}",
+        headers={"Authorization": f"Bearer {token}"},
+        timeout=10,
+    )
+    if reponse.status_code != 204:
+        raise ErreurAPI(reponse.json().get("detail", "Erreur de suppression du compte"))
+
+
 def metriques_brutes(token: str) -> str:
     """Renvoie le texte brut expose par /metrics (format Prometheus),
     parse ensuite cote vue pour en tirer quelques chiffres simples."""

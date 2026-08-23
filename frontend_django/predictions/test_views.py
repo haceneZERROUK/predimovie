@@ -212,6 +212,111 @@ def test_historique_accessible_pour_admin(client, monkeypatch):
 
 
 @pytest.mark.django_db
+def test_comptes_refuse_un_compte_cinema(client):
+    _connecte(client)
+    reponse = client.get(reverse("predictions:comptes"))
+    assert reponse.status_code == 302
+    assert reponse.url == reverse("predictions:accueil")
+
+
+@pytest.mark.django_db
+def test_comptes_accessible_pour_admin(client, monkeypatch):
+    _connecte_admin(client)
+    faux_comptes = [
+        {
+            "id_compte": 1,
+            "mail": "cinema@example.com",
+            "nom_cinema": "Cinema Test",
+            "date_inscription": "2026-08-22",
+            "derniere_connexion": None,
+            "statut_compte": True,
+        }
+    ]
+    monkeypatch.setattr("predictions.views.lister_comptes", lambda token: faux_comptes)
+    reponse = client.get(reverse("predictions:comptes"))
+    assert reponse.status_code == 200
+    assert reponse.context["comptes"][0]["mail"] == "cinema@example.com"
+    assert reponse.context["comptes"][0]["date_inscription"] == date(2026, 8, 22)
+
+
+@pytest.mark.django_db
+def test_creer_compte_refuse_un_compte_cinema(client):
+    _connecte(client)
+    reponse = client.get(reverse("predictions:creer_compte"))
+    assert reponse.status_code == 302
+    assert reponse.url == reverse("predictions:accueil")
+
+
+@pytest.mark.django_db
+def test_creer_compte_get_affiche_le_formulaire(client):
+    _connecte_admin(client)
+    reponse = client.get(reverse("predictions:creer_compte"))
+    assert reponse.status_code == 200
+    assert b"nom_cinema" in reponse.content
+
+
+@pytest.mark.django_db
+def test_creer_compte_post_cree_et_redirige(client, monkeypatch):
+    _connecte_admin(client)
+    appels = []
+    monkeypatch.setattr(
+        "predictions.views.appel_creer_compte",
+        lambda mail, mot_de_passe, nom_cinema, token: appels.append(
+            (mail, mot_de_passe, nom_cinema)
+        ),
+    )
+    reponse = client.post(
+        reverse("predictions:creer_compte"),
+        {
+            "mail": "nouveau@example.com",
+            "mot_de_passe": "azerty123",
+            "nom_cinema": "Cinema Le Nouveau",
+        },
+    )
+    assert reponse.status_code == 302
+    assert reponse.url == reverse("predictions:comptes")
+    assert appels == [("nouveau@example.com", "azerty123", "Cinema Le Nouveau")]
+
+
+@pytest.mark.django_db
+def test_creer_compte_post_affiche_l_erreur_si_mail_deja_pris(client, monkeypatch):
+    _connecte_admin(client)
+
+    def _echoue(mail, mot_de_passe, nom_cinema, token):
+        raise ErreurAPI("Un compte existe deja avec ce mail")
+
+    monkeypatch.setattr("predictions.views.appel_creer_compte", _echoue)
+    reponse = client.post(
+        reverse("predictions:creer_compte"),
+        {"mail": "deja@example.com", "mot_de_passe": "azerty123", "nom_cinema": "Doublon"},
+    )
+    assert reponse.status_code == 200
+    assert b"nom_cinema" in reponse.content
+
+
+@pytest.mark.django_db
+def test_supprimer_compte_refuse_un_compte_cinema(client):
+    _connecte(client)
+    reponse = client.post(reverse("predictions:supprimer_compte", args=[1]))
+    assert reponse.status_code == 302
+    assert reponse.url == reverse("predictions:accueil")
+
+
+@pytest.mark.django_db
+def test_supprimer_compte_appelle_l_api_et_redirige(client, monkeypatch):
+    _connecte_admin(client)
+    appels = []
+    monkeypatch.setattr(
+        "predictions.views.appel_supprimer_compte",
+        lambda id_compte, token: appels.append(id_compte),
+    )
+    reponse = client.post(reverse("predictions:supprimer_compte", args=[42]))
+    assert reponse.status_code == 302
+    assert reponse.url == reverse("predictions:comptes")
+    assert appels == [42]
+
+
+@pytest.mark.django_db
 def test_relancer_refuse_un_compte_cinema(client):
     _connecte(client)
     reponse = client.post(reverse("predictions:relancer"))

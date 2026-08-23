@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 
 import jwt
 from django.contrib import messages
@@ -8,11 +8,14 @@ from predictions.api_client import (
     ErreurAPI,
     films_a_venir,
     historique_predictions,
+    lister_comptes,
     metriques_brutes,
 )
+from predictions.api_client import creer_compte as appel_creer_compte
 from predictions.api_client import login as appel_login
 from predictions.api_client import predict as appel_predict
 from predictions.api_client import relancer_predictions as appel_relancer
+from predictions.api_client import supprimer_compte as appel_supprimer_compte
 from predictions.decorators import admin_requis, connexion_requise
 from predictions.metrics_parser import parser_metriques
 
@@ -121,3 +124,52 @@ def monitoring_view(request):
         messages.error(request, str(erreur))
         metriques = None
     return render(request, "predictions/monitoring.html", {"metriques": metriques})
+
+
+@admin_requis
+def comptes_view(request):
+    token = request.session["token"]
+    try:
+        comptes = lister_comptes(token)
+    except ErreurAPI as erreur:
+        messages.error(request, str(erreur))
+        comptes = []
+
+    # meme souci que pour date_sortie sur le top10 : l'API renvoie des
+    # dates ISO en texte, il faut les parser pour que |date les affiche
+    # au format francais dans le template
+    for compte in comptes:
+        compte["date_inscription"] = date.fromisoformat(compte["date_inscription"])
+        if compte["derniere_connexion"]:
+            compte["derniere_connexion"] = datetime.fromisoformat(compte["derniere_connexion"])
+
+    return render(request, "predictions/comptes.html", {"comptes": comptes})
+
+
+@admin_requis
+def creer_compte_view(request):
+    if request.method == "POST":
+        token = request.session["token"]
+        mail = request.POST.get("mail", "")
+        mot_de_passe = request.POST.get("mot_de_passe", "")
+        nom_cinema = request.POST.get("nom_cinema", "")
+        try:
+            appel_creer_compte(mail, mot_de_passe, nom_cinema, token)
+            messages.success(request, f"Compte cree pour {nom_cinema}.")
+            return redirect("predictions:comptes")
+        except ErreurAPI as erreur:
+            messages.error(request, str(erreur))
+
+    return render(request, "predictions/creer_compte.html")
+
+
+@admin_requis
+def supprimer_compte_view(request, id_compte):
+    if request.method == "POST":
+        token = request.session["token"]
+        try:
+            appel_supprimer_compte(id_compte, token)
+            messages.success(request, "Compte cinema supprime.")
+        except ErreurAPI as erreur:
+            messages.error(request, str(erreur))
+    return redirect("predictions:comptes")

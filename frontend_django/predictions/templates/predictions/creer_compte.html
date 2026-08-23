@@ -1,0 +1,37 @@
+{% extends "predictions/base.html" %}
+{% block contenu %}
+<h1 class="text-2xl font-bold text-white mb-2">Nouveau cinema</h1>
+<p class="text-gray-400 mb-6">Cree un compte pour un nouveau cinema client.</p>
+
+<div class="bg-gray-800 p-8 rounded-lg shadow-lg max-w-md">
+  <form method="post" class="space-y-6">
+    {% csrf_token %}
+    <div>
+      <label for="nom_cinema" class="block text-sm font-medium text-gray-300 mb-2">Nom du cinema</label>
+      <input type="text" id="nom_cinema" name="nom_cinema" required
+        class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+        placeholder="Cinema Le Central">
+    </div>
+    <div>
+      <label for="mail" class="block text-sm font-medium text-gray-300 mb-2">Mail</label>
+      <input type="email" id="mail" name="mail" required
+        class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+        placeholder="proprietaire@cinema.fr">
+    </div>
+    <div>
+      <label for="mot_de_passe" class="block text-sm font-medium text-gray-300 mb-2">Mot de passe</label>
+      <input type="password" id="mot_de_passe" name="mot_de_passe" required
+        class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+        placeholder="••••••••">
+    </div>
+    <div class="flex gap-3">
+      <button type="submit"
+        class="flex-1 flex items-center justify-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition">
+        Creer le compte
+      </button>
+      <a href="{% url 'predictions:comptes' %}"
+        class="px-4 py-2 text-gray-400 hover:text-white transition">Annuler</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

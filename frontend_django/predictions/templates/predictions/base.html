@@ -8,38 +8,59 @@
 <link rel="icon" type="image/svg+xml" href="{% static 'predictions/logo.svg' %}">
 <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 </head>
-<body class="min-h-screen bg-gray-900 flex">
+<body class="min-h-screen bg-gray-900 flex flex-col">
 
-<aside class="w-64 bg-gray-800 text-white p-6 flex flex-col">
-  <div class="flex items-center space-x-2 mb-8">
-    <img src="{% static 'predictions/logo.svg' %}" alt="" class="w-6 h-6">
-    <span class="text-xl font-bold">Predimovie</span>
+<header class="relative bg-gray-800 text-white border-b border-gray-700 overflow-hidden">
+  <!-- rangee de sieges en filigrane, juste decoratif -->
+  <svg class="absolute inset-0 w-full h-full" preserveAspectRatio="none" aria-hidden="true">
+    <defs>
+      <pattern id="sieges" x="0" y="0" width="64" height="64" patternUnits="userSpaceOnUse">
+        <path d="M14 20 Q14 12 22 12 L42 12 Q50 12 50 20 L50 34 L44 34 L44 22 Q44 18 40 18 L24 18 Q20 18 20 22 L20 34 L14 34 Z"
+          fill="#ffffff" fill-opacity="0.05"/>
+        <rect x="12" y="34" width="40" height="16" rx="4" fill="#ffffff" fill-opacity="0.05"/>
+        <rect x="10" y="30" width="4" height="20" rx="2" fill="#ffffff" fill-opacity="0.05"/>
+        <rect x="50" y="30" width="4" height="20" rx="2" fill="#ffffff" fill-opacity="0.05"/>
+      </pattern>
+    </defs>
+    <rect width="100%" height="100%" fill="url(#sieges)"/>
+  </svg>
+
+  <div class="relative px-6 py-4 flex flex-wrap items-center justify-between gap-4">
+    <div class="flex items-center space-x-2">
+      <img src="{% static 'predictions/logo.svg' %}" alt="" class="w-7 h-7">
+      <span class="text-xl font-bold">Predimovie</span>
+    </div>
+
+    <nav class="flex items-center gap-1 flex-wrap">
+      <a href="{% url 'predictions:top10' %}"
+        class="block px-4 py-2 rounded-lg hover:bg-gray-700 transition text-sm">Prochaines sorties</a>
+      {% if request.session.role == "admin" %}
+      <a href="{% url 'predictions:historique' %}"
+        class="block px-4 py-2 rounded-lg hover:bg-gray-700 transition text-sm">Historique predit/reel</a>
+      <a href="{% url 'predictions:monitoring' %}"
+        class="block px-4 py-2 rounded-lg hover:bg-gray-700 transition text-sm">Monitoring</a>
+      <a href="{% url 'predictions:comptes' %}"
+        class="block px-4 py-2 rounded-lg hover:bg-gray-700 transition text-sm">Comptes cinema</a>
+      {% endif %}
+    </nav>
+
+    <div class="flex items-center gap-3">
+      {% if request.session.role == "admin" %}
+      <form method="post" action="{% url 'predictions:relancer' %}">
+        {% csrf_token %}
+        <button type="submit"
+          class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition text-sm">
+          Relancer les predictions
+        </button>
+      </form>
+      {% endif %}
+      <div class="text-xs text-gray-400 text-right leading-tight">
+        {{ request.session.mail }} ({{ request.session.role }})<br>
+        <a href="{% url 'predictions:logout' %}" class="hover:text-white transition">Deconnexion</a>
+      </div>
+    </div>
   </div>
-
-  <nav class="space-y-2 flex-1">
-    <a href="{% url 'predictions:top10' %}"
-      class="block px-4 py-2 rounded-lg hover:bg-gray-700 transition">Prochaines sorties</a>
-    {% if request.session.role == "admin" %}
-    <a href="{% url 'predictions:historique' %}"
-      class="block px-4 py-2 rounded-lg hover:bg-gray-700 transition">Historique predit/reel</a>
-    <a href="{% url 'predictions:monitoring' %}"
-      class="block px-4 py-2 rounded-lg hover:bg-gray-700 transition">Monitoring</a>
-    <form method="post" action="{% url 'predictions:relancer' %}" class="mt-4">
-      {% csrf_token %}
-      <button type="submit"
-        class="w-full bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition text-sm">
-        Relancer les predictions
-      </button>
-    </form>
-    {% endif %}
-  </nav>
-
-  <div class="pt-6 border-t border-gray-700">
-    <div class="text-xs text-gray-400 mb-2">{{ request.session.mail }} ({{ request.session.role }})</div>
-    <a href="{% url 'predictions:logout' %}"
-      class="block px-4 py-2 rounded-lg text-gray-400 hover:bg-gray-700 transition text-sm">Deconnexion</a>
-  </div>
-</aside>
+</header>
 
 <main class="flex-1 p-8">
   {% if messages %}
