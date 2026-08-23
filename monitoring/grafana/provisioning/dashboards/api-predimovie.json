@@ -54,11 +54,25 @@
       "id": 4,
       "title": "Requetes totales depuis le demarrage",
       "type": "stat",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "gridPos": { "h": 8, "w": 6, "x": 12, "y": 8 },
       "datasource": { "type": "prometheus", "uid": "predimovie-prometheus" },
       "targets": [
         {
           "expr": "sum(http_requests_total)",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Modele invoque (fois)",
+      "description": "Compte chaque appel reel a predire() (backend/moteur_prediction.py), pas juste le nombre de requetes HTTP : une seule requete /predictions/relancer fait tourner le modele sur plusieurs films.",
+      "type": "stat",
+      "gridPos": { "h": 8, "w": 6, "x": 18, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "predimovie-prometheus" },
+      "targets": [
+        {
+          "expr": "sum(predictions_modele_total)",
           "refId": "A"
         }
       ]
