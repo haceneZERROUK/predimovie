@@ -1,6 +1,8 @@
 # Tests des vues de connexion/deconnexion. On ne tape jamais le vrai
 # backend FastAPI ici : on remplace appel_login par une fausse fonction
 # (monkeypatch) pour rester rapide et independant du reseau.
+from datetime import date
+
 import jwt
 import pytest
 from django.urls import reverse
@@ -136,6 +138,28 @@ def test_top10_trie_par_entrees_predites_decroissant(client, monkeypatch):
     assert reponse.status_code == 200
     predictions = reponse.context["predictions"]
     assert [p["id_oeuvre"] for p in predictions] == [2, 1]
+
+
+@pytest.mark.django_db
+def test_top10_convertit_la_date_iso_en_date_pour_l_affichage_francais(client, monkeypatch):
+    """L'API renvoie une date ISO en texte ("2026-12-16") : la vue doit la
+    convertir en vraie date pour que le template l'affiche en jj/mm/aaaa."""
+    _connecte(client)
+    faux_films = [{"id_oeuvre": 1, "nom_francais": "Film", "date_sortie": "2026-12-16"}]
+    monkeypatch.setattr("predictions.views.films_a_venir", lambda token: faux_films)
+    monkeypatch.setattr(
+        "predictions.views.appel_predict",
+        lambda id_oeuvre, token: {
+            "id_oeuvre": 1,
+            "nom_francais": "Film",
+            "entrees_premiere_semaine_predites": 100,
+        },
+    )
+
+    reponse = client.get(reverse("predictions:top10"))
+    assert reponse.status_code == 200
+    assert reponse.context["predictions"][0]["date_sortie"] == date(2026, 12, 16)
+    assert "16/12/2026" in reponse.content.decode()
 
 
 @pytest.mark.django_db

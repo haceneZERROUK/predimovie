@@ -18,6 +18,13 @@ JPBOX_VUE_INTERNATIONAL = 5
 JPBOX_USER_AGENT = "PredimovieBot/1.0 (projet etudiant, usage academique)"
 JPBOX_DELAI_ENTRE_REQUETES = 1.5  # secondes
 
+# JPBOX ne suit que les sorties avec un vrai suivi box-office (les grosses
+# sorties) : AlloCiné sert a completer avec les petites sorties (arthouse,
+# distribution limitee) que JPBOX ne reference meme pas.
+ALLOCINE_BASE_URL = os.environ.get("ALLOCINE_BASE_URL", "https://www.allocine.fr")
+ALLOCINE_USER_AGENT = "PredimovieBot/1.0 (projet etudiant, usage academique)"
+ALLOCINE_DELAI_ENTRE_REQUETES = 1.5  # secondes
+
 # Clé partagée avec N8n pour protéger les routes /scrape/* : pas de vrais
 # utilisateurs ici (pas besoin de JWT), juste un secret à connaître.
 SCRAPER_API_KEY = os.environ.get("SCRAPER_API_KEY", "")

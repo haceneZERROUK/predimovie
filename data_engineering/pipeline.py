@@ -1,12 +1,13 @@
-# Ce module fait le lien entre JPBOX et TMDB : il récupère les infos
-# des 2 sources, vérifie qu'elles parlent bien du même film, puis
-# enregistre le tout dans la base de données (via les modèles SQLAlchemy).
-from datetime import date
+# Ce module fait le lien entre JPBOX, AlloCiné et TMDB : il récupère les
+# infos des différentes sources, vérifie qu'elles parlent bien du même
+# film, puis enregistre le tout dans la base de données (via les modèles
+# SQLAlchemy).
+from datetime import date, timedelta
 
 from sqlalchemy.orm import Session
 
-from data_engineering import imdb, jpbox, tmdb
-from data_engineering.matching import meme_film, nettoyer_annotations
+from data_engineering import allocine, imdb, jpbox, tmdb
+from data_engineering.matching import meme_film, nettoyer_annotations, se_ressemblent
 from database.models import (
     Acteur,
     ActeurOeuvre,
@@ -98,12 +99,13 @@ def enrichir_avec_tmdb(titre: str, annee: int | None) -> dict | None:
     casting = tmdb.get_casting_film(resultat["id"])
     realisateurs = [p["name"] for p in casting.get("crew", []) if p.get("job") == "Director"]
 
-    # Le texte JPBOX ne donne pas toujours l'année (titre tronqué, pas de
-    # parenthèse...). TMDB donne une vraie date de sortie, plus fiable.
-    # On gardait avant seulement l'année en jetant le jour/mois : corrigé,
-    # on garde la date complète (utile pour savoir quel film sort quel
-    # mercredi, pas juste quelle année).
-    texte_date_sortie = details.get("release_date") or ""
+    # Le champ "release_date" de get_details_film() n'est pas forcement la
+    # date francaise (souvent la date US, ex: Avengers Doomsday 18/12 aux
+    # USA contre 16/12 en France) : on va chercher la vraie date FR via
+    # release_dates, et on ne retombe sur "release_date" que si TMDB n'a
+    # pas encore de date FR pour ce film (cas des sorties tres lointaines).
+    dates_par_pays = tmdb.get_dates_sortie_par_pays(resultat["id"])
+    texte_date_sortie = tmdb.date_sortie_france(dates_par_pays) or details.get("release_date") or ""
     date_sortie_tmdb = date.fromisoformat(texte_date_sortie) if texte_date_sortie else None
     annee_sortie_tmdb = date_sortie_tmdb.year if date_sortie_tmdb else None
 
@@ -132,9 +134,10 @@ def sauvegarder_film(
     annee_sortie: int | None,
     infos_tmdb: dict | None,
     notes_imdb: dict | None = None,
+    id_allocine: int | None = None,
 ) -> Oeuvre:
-    """Crée le film en base s'il n'existe pas encore (grâce à id_jpbox),
-    sinon récupère la ligne déjà existante et la complète.
+    """Crée le film en base s'il n'existe pas encore (grâce à id_jpbox ou
+    id_allocine), sinon récupère la ligne déjà existante et la complète.
 
     On ne retrouve plus une oeuvre existante via id_tmdb : plusieurs lignes
     peuvent légitimement partager le même id_tmdb (une reprise en salle a
@@ -143,6 +146,8 @@ def sauvegarder_film(
     oeuvre = None
     if id_jpbox is not None:
         oeuvre = session.query(Oeuvre).filter_by(id_jpbox=id_jpbox).first()
+    if oeuvre is None and id_allocine is not None:
+        oeuvre = session.query(Oeuvre).filter_by(id_allocine=id_allocine).first()
 
     if oeuvre is None:
         nature = _get_ou_creer_nature(session, "Film")
@@ -151,6 +156,7 @@ def sauvegarder_film(
             nom_original=titre_original,
             annee_sortie=annee_sortie,
             id_jpbox=id_jpbox,
+            id_allocine=id_allocine,
             nature=nature,
         )
         session.add(oeuvre)
@@ -234,26 +240,77 @@ def _enrichir_oeuvre(
     return oeuvre
 
 
-def traiter_films_a_venir(session: Session, notes_imdb: dict | None = None) -> int:
-    """Flux A : scrape les films bientôt en salle et les enregistre
-    avec leurs infos TMDB. Retourne le nombre de films traités."""
+def prochain_mercredi(depuis: date | None = None) -> date:
+    """Renvoie la date du mercredi qui arrive (les films sortent le
+    mercredi en France). Si on est deja mercredi, renvoie aujourd'hui."""
+    depuis = depuis or date.today()
+    jours_a_ajouter = (2 - depuis.weekday()) % 7  # lundi=0 ... mercredi=2
+    return depuis + timedelta(days=jours_a_ajouter)
+
+
+def traiter_films_a_venir(
+    session: Session, notes_imdb: dict | None = None, date_sortie: date | None = None
+) -> int:
+    """Flux A : scrape TOUS les films qui sortent un mercredi donne
+    (par defaut le prochain), et les enregistre avec leurs infos TMDB.
+
+    2 sources combinees : JPBOX (calendrier des sorties) ne suit que les
+    grosses sorties avec un vrai suivi box-office. AlloCine complete avec
+    les petites sorties arthouse/distribution limitee que JPBOX ne
+    reference meme pas. Retourne le nombre de films traites."""
     if notes_imdb is None:
         notes_imdb = imdb.telecharger_notes_imdb()
+    if date_sortie is None:
+        date_sortie = prochain_mercredi()
 
     nb_films = 0
-    for id_jpbox in jpbox.ids_films_a_venir():
-        infos_jpbox = jpbox.details_film(id_jpbox)
-        infos_tmdb = enrichir_avec_tmdb(infos_jpbox["titre_francais"], infos_jpbox["annee_sortie"])
-        sauvegarder_film(
+    titres_traites = []  # [(titre, oeuvre)] pour eviter les doublons avec AlloCine
+
+    for film in jpbox.films_du_calendrier(date_sortie):
+        infos_tmdb = enrichir_avec_tmdb(film["titre_francais"], film["annee_sortie"])
+        oeuvre = sauvegarder_film(
             session,
-            id_jpbox=id_jpbox,
-            titre_francais=infos_jpbox["titre_francais"],
-            titre_original=infos_jpbox["titre_francais"],
-            annee_sortie=infos_jpbox["annee_sortie"],
+            id_jpbox=film["id_jpbox"],
+            titre_francais=film["titre_francais"],
+            titre_original=film["titre_francais"],
+            annee_sortie=film["annee_sortie"],
             infos_tmdb=infos_tmdb,
             notes_imdb=notes_imdb,
         )
+        # date_sortie ecrase toujours ce que TMDB a mis : pour une reprise
+        # en salle (ex: retrospective, rediffusion), TMDB ne connait que la
+        # date de sortie ORIGINALE du film, pas celle de cette reprise-la.
+        # La date qu'on vient de demander (celle de JPBOX) est la bonne.
+        oeuvre.date_sortie = date_sortie
+        titres_traites.append((film["titre_francais"], oeuvre))
         nb_films += 1
+
+    for film in allocine.films_de_la_semaine(date_sortie):
+        # le meme film peut deja avoir ete trouve via JPBOX : dans ce cas
+        # on rattache juste id_allocine, pas de nouvelle ligne
+        deja_traite = next(
+            (o for titre, o in titres_traites if se_ressemblent(titre, film["titre_francais"])),
+            None,
+        )
+        if deja_traite is not None:
+            deja_traite.id_allocine = film["id_allocine"]
+            continue
+
+        infos_tmdb = enrichir_avec_tmdb(film["titre_francais"], None)
+        oeuvre = sauvegarder_film(
+            session,
+            id_jpbox=None,
+            id_allocine=film["id_allocine"],
+            titre_francais=film["titre_francais"],
+            titre_original=film["titre_francais"],
+            annee_sortie=None,
+            infos_tmdb=infos_tmdb,
+            notes_imdb=notes_imdb,
+        )
+        oeuvre.date_sortie = date_sortie  # meme raison : cf. le bloc JPBOX ci-dessus
+        titres_traites.append((film["titre_francais"], oeuvre))
+        nb_films += 1
+
     session.commit()
     return nb_films
 

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <mask id="reelMask">
+    <circle cx="32" cy="32" r="27" fill="white"/>
+    <circle cx="32" cy="32" r="6" fill="black"/>
+    <circle cx="32" cy="16" r="6.5" fill="black"/>
+    <circle cx="18.1" cy="40" r="6.5" fill="black"/>
+    <circle cx="45.9" cy="40" r="6.5" fill="black"/>
+  </mask>
+  <circle cx="32" cy="32" r="27" fill="#9333ea" mask="url(#reelMask)"/>
+  <path d="M12 46 L23 37 L33 40 L46 20" stroke="#ffffff" stroke-width="4.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M50 12 L52.2 17 L57 19.2 L52.2 21.4 L50 26.4 L47.8 21.4 L43 19.2 L47.8 17 Z" fill="#ffffff"/>
+</svg>

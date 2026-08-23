@@ -10,6 +10,7 @@ from data_engineering.config import (
     JPBOX_BASE_URL,
     JPBOX_DELAI_ENTRE_REQUETES,
     JPBOX_USER_AGENT,
+    JPBOX_VUE_FRANCE,
 )
 
 EN_TETES = {"User-Agent": JPBOX_USER_AGENT}
@@ -100,49 +101,15 @@ def extraire_classement(html: str) -> list[dict]:
     return films
 
 
-def ids_films_a_venir() -> list[int]:
-    """Liste les identifiants JPBOX des films "bientôt sur les écrans"
-    affichés sur la page d'accueil (juste des affiches, sans titre)."""
-    html = _telecharger_page(JPBOX_BASE_URL + "/")
-    return extraire_ids_films_a_venir(html)
+def _lire_lien_calendrier(lien) -> dict:
+    """Lit un lien vers une fiche film sur la page calendrier (titre +
+    annee sont dans le texte du lien, pas besoin d'aller sur la fiche).
 
-
-def extraire_ids_films_a_venir(html: str) -> list[int]:
-    """Parse le HTML de la page d'accueil.
-    Séparé de ids_films_a_venir() pour pouvoir être testé sans réseau."""
-    soup = BeautifulSoup(html, "lxml")
-
-    # la section commence après le titre "BIENTÔT" et s'arrête avant "NOUVEAUTES"
-    balises = list(soup.find_all(True))
-    debut = fin = None
-    for i, balise in enumerate(balises):
-        for texte in balise.find_all(string=True, recursive=False):
-            if "BIENTÔT" in texte and debut is None:
-                debut = i
-            if "NOUVEAUTES" in texte and fin is None:
-                fin = i
-
-    if debut is None or fin is None:
-        return []
-
-    ids = []
-    for balise in balises[debut:fin]:
-        if balise.name == "a" and balise.get("href", "").startswith("fichfilm.php"):
-            id_match = re.search(r"id=(\d+)", balise["href"])
-            if id_match:
-                ids.append(int(id_match.group(1)))
-    return ids
-
-
-def details_film(id_jpbox: int) -> dict:
-    """Récupère le titre français et l'année de sortie d'un film à partir
-    de sa fiche JPBOX (utilisé pour les films pas encore sortis)."""
-    url = f"{JPBOX_BASE_URL}/fichfilm.php?id={id_jpbox}"
-    html = _telecharger_page(url)
-    soup = BeautifulSoup(html, "lxml")
-
-    titre_tag = soup.find(["h1", "h2"])
-    titre_et_annee = titre_tag.get_text(strip=True) if titre_tag else ""
+    Le lien contient parfois le titre francais puis, apres un <br/>, le
+    titre original (ex: "Tad l'explorateur...<br/>Tadeo Jones..."). On ne
+    garde que la premiere ligne (titre francais)."""
+    premiere_ligne = lien.find(string=True, recursive=False)
+    titre_et_annee = premiere_ligne.strip() if premiere_ligne else lien.get_text(strip=True)
 
     match = re.match(r"(.+)\s\((\d{4})\)$", titre_et_annee)
     if match:
@@ -150,8 +117,37 @@ def details_film(id_jpbox: int) -> dict:
     else:
         titre_francais, annee_sortie = titre_et_annee, None
 
+    id_match = re.search(r"id=(\d+)", lien["href"])
+    id_jpbox = int(id_match.group(1)) if id_match else None
+
     return {
         "id_jpbox": id_jpbox,
         "titre_francais": titre_francais,
         "annee_sortie": annee_sortie,
     }
+
+
+def films_du_calendrier(date_sortie, vue: int = JPBOX_VUE_FRANCE) -> list[dict]:
+    """Recupere TOUS les films qui sortent a une date donnee, via le
+    calendrier des sorties JPBOX (v9_avenir.php). Contrairement a la page
+    d'accueil qui ne met en avant qu'une poignee de grosses sorties, cette
+    page liste vraiment tous les films prevus ce jour-la."""
+    url = f"{JPBOX_BASE_URL}/v9_avenir.php?view={vue}&date={date_sortie.isoformat()}&fixe=1"
+    html = _telecharger_page(url)
+    return extraire_films_du_calendrier(html)
+
+
+def extraire_films_du_calendrier(html: str) -> list[dict]:
+    """Parse le HTML de la page calendrier des sorties.
+    Separe de films_du_calendrier() pour pouvoir etre teste sans reseau."""
+    soup = BeautifulSoup(html, "lxml")
+
+    films = []
+    ids_deja_vus = set()
+    for lien in soup.find_all("a", href=re.compile(r"^fichfilm\.php\?id=\d+")):
+        film = _lire_lien_calendrier(lien)
+        if film["id_jpbox"] in ids_deja_vus:
+            continue  # le meme film peut avoir plusieurs liens sur la page
+        ids_deja_vus.add(film["id_jpbox"])
+        films.append(film)
+    return films

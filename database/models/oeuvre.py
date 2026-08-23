@@ -45,11 +45,16 @@ class Oeuvre(Base):
     entrees_premiere_semaine: Mapped[int] = mapped_column(Integer, nullable=True)
     # Identifiants externes : ils servent à retrouver un film déjà enregistré
     # au lieu d'en recréer un doublon à chaque passage du scraper.
-    # id_jpbox reste la seule clé d'identité par ligne : une reprise en salle
-    # (ex: "Kill Bill (Rep. 2004)") a son propre id_jpbox et sa propre
-    # entrees_premiere_semaine, mais partage le même id_tmdb que la sortie
-    # initiale du même film — donc id_tmdb n'est volontairement pas unique.
+    # id_jpbox et id_allocine sont chacun une clé d'identité par ligne (l'un
+    # ou l'autre selon la source qui a trouvé le film en premier) : une
+    # reprise en salle (ex: "Kill Bill (Rep. 2004)") a son propre id_jpbox
+    # et sa propre entrees_premiere_semaine, mais partage le même id_tmdb
+    # que la sortie initiale du même film — donc id_tmdb n'est volontairement
+    # pas unique.
     id_jpbox: Mapped[int] = mapped_column(Integer, nullable=True, unique=True)
+    # AlloCiné complète JPBOX avec les petites sorties (arthouse,
+    # distribution limitée) que JPBOX ne référence même pas.
+    id_allocine: Mapped[int] = mapped_column(Integer, nullable=True, unique=True)
     id_tmdb: Mapped[int] = mapped_column(Integer, nullable=True)
     id_nature: Mapped[int] = mapped_column(ForeignKey("nature.id_nature"), nullable=False)
 

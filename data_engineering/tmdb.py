@@ -44,3 +44,27 @@ def get_casting_film(tmdb_id: int) -> dict:
     reponse = httpx.get(f"{TMDB_BASE_URL}/movie/{tmdb_id}/credits", params=params, timeout=10)
     reponse.raise_for_status()
     return reponse.json()
+
+
+def get_dates_sortie_par_pays(tmdb_id: int) -> list[dict]:
+    """Récupère les dates de sortie officielles, pays par pays. Le champ
+    "release_date" de get_details_film() n'est pas forcement la date
+    française (souvent la date US) : on utilise ça pour la vraie date FR."""
+    params = {"api_key": TMDB_API_KEY}
+    reponse = httpx.get(f"{TMDB_BASE_URL}/movie/{tmdb_id}/release_dates", params=params, timeout=10)
+    reponse.raise_for_status()
+    return reponse.json().get("results", [])
+
+
+def date_sortie_france(resultats_par_pays: list[dict]) -> str | None:
+    """Cherche la date de sortie en salle (type 3 = "Theatrical") en
+    France dans le resultat de get_dates_sortie_par_pays().
+    Renvoie None si TMDB n'a pas encore de date FR pour ce film."""
+    for pays in resultats_par_pays:
+        if pays.get("iso_3166_1") != "FR":
+            continue
+        dates_salle = sorted(
+            rd["release_date"][:10] for rd in pays.get("release_dates", []) if rd.get("type") == 3
+        )
+        return dates_salle[0] if dates_salle else None
+    return None

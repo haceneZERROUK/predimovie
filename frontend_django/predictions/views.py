@@ -1,3 +1,5 @@
+from datetime import date
+
 import jwt
 from django.contrib import messages
 from django.shortcuts import redirect, render
@@ -70,13 +72,20 @@ def top10_view(request):
             resultat = appel_predict(film["id_oeuvre"], token)
         except ErreurAPI:
             continue
-        resultat["date_sortie"] = film.get("date_sortie")
+        # l'API renvoie une date ISO (ex: "2026-12-16") en texte brut : on
+        # la parse en vraie date pour que le template puisse l'afficher au
+        # format francais (jj/mm/aaaa) avec le filtre |date
+        texte_date_sortie = film.get("date_sortie")
+        resultat["date_sortie"] = (
+            date.fromisoformat(texte_date_sortie) if texte_date_sortie else None
+        )
         predictions.append(resultat)
 
+    # /films-a-venir ne renvoie deja que les films du mercredi a venir (pas
+    # tout ce qui sort dans les mois qui viennent), pas besoin de couper a 10
     predictions.sort(key=lambda p: p["entrees_premiere_semaine_predites"], reverse=True)
-    top10 = predictions[:10]
 
-    return render(request, "predictions/top10.html", {"predictions": top10})
+    return render(request, "predictions/top10.html", {"predictions": predictions})
 
 
 @admin_requis

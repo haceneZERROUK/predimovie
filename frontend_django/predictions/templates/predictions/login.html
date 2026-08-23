@@ -1,8 +1,9 @@
 {% extends "predictions/auth_base.html" %}
+{% load static %}
 {% block contenu %}
 <div class="bg-gray-800 p-8 rounded-lg shadow-lg w-full">
   <div class="flex items-center justify-center space-x-3 mb-8">
-    <span class="text-3xl">🎬</span>
+    <img src="{% static 'predictions/logo.svg' %}" alt="" class="w-9 h-9">
     <h1 class="text-2xl font-bold text-white">Predimovie</h1>
   </div>
 

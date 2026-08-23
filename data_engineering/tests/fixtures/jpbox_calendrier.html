@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="fr">
+    <head>
+        <title>Calendrier Sorties - JP Box-Office</title>
+        <!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-7LDVBMJHB8"></script>
+<script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() {
+        dataLayer.push(arguments);
+    }
+    gtag('js', new Date());
+
+    gtag('config', 'G-7LDVBMJHB8');
+</script>
+<meta name="description" content="JP Box-Office : chiffres du cinéma en France, aux États-Unis et dans le monde. Box-office, entrées, records, statistiques et classements.">
+<link rel="canonical" href="https://www.jpbox-office.com/">
+<meta name="google-site-verification" content="bcBoJFP2Qurd631HXmogoZUnq65q5_5423fNTixjd2Q" />
+<meta http-equiv="refresh" content="300">
+<meta charset="UTF-8">
+
+<link rel="stylesheet" href="style_2023v2.css" type="text/css" />
+<link rel="stylesheet" href="chart.css">
+
+<!-- Calendrier -->
+<script type="text/javascript" src="tcal.js"></script>
+
+<!-- Our project just needs Font Awesome Solid + Brands -->
+<link rel="stylesheet" href="fontawesome/css/all.css" type="text/css" />
+<script defer src="/fontawesome/js/solid.js"></script>
+<script defer src="/fontawesome/js/fontawesome.js"></script>
+<script defer src="/fontawesome/js/brands.js"></script>
+
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+
+        const input = document.getElementById('searchInput');
+        const box = document.getElementById('suggestionsBox');
+
+        input.addEventListener('keyup', function () {
+            let q = this.value.trim();
+
+            if (q.length < 2) {
+                box.style.display = 'none';
+                return;
+            }
+
+            fetch('autocomplete_search.php?q=' + encodeURIComponent(q))
+                    .then(r => r.text()) // <-- on lit en TEXTE, pas en JSON
+                    .then(txt => {
+
+                        // --- VERSION BLINDÉE ---
+                        // On extrait UNIQUEMENT le JSON valide
+                        let jsonStart = txt.indexOf('[');
+                        let jsonEnd = txt.lastIndexOf(']') + 1;
+
+                        if (jsonStart === -1 || jsonEnd === -1) {
+                            console.warn("Réponse polluée par Edge :", txt);
+                            return [];
+                        }
+
+                        let cleanJson = txt.substring(jsonStart, jsonEnd);
+
+                        let data;
+                        try {
+                            data = JSON.parse(cleanJson);
+                        } catch (e) {
+                            console.error("JSON invalide après nettoyage :", cleanJson);
+                            return [];
+                        }
+
+                        // --- AFFICHAGE ---
+                        box.innerHTML = '';
+
+                        if (!data || data.length === 0) {
+                            box.style.display = 'none';
+                            return;
+                        }
+
+                        data.forEach(item => {
+                            let div = document.createElement('div');
+                            div.style.padding = '6px';
+                            div.style.cursor = 'pointer';
+                            div.style.borderBottom = "1px solid #eee";
+
+                            const img = new Image();
+                            img.src = item.image;
+
+                            img.onload = function () {
+                                // L'image existe → on l'affiche
+                                div.innerHTML = `
+                                    <div style="display:flex; align-items:center; gap:8px;">
+                                        <img src="${item.image}" 
+                                             style="width:32px; height:50px; object-fit:cover; border-radius:1px;">
+                                        <div>
+                                            <strong>${item.value}</strong><br>
+                                            <span style="font-size:10px; color:#777;">${item.extra}</span>
+                                        </div>
+                                    </div>
+                                `;
+                            };
+
+                            img.onerror = function () {
+                                // L'image n'existe pas → on affiche seulement le texte
+                                div.innerHTML = `
+                                    <div>
+                                        <strong>${item.value}</strong><br>
+                                        <span style="font-size:10px; color:#777;">${item.extra}</span>
+                                    </div>
+                                `;
+                            };
+
+
+                            div.onclick = function () {
+                                // On remplit le champ
+                                input.value = item.value;
+                                box.style.display = 'none';
+
+                                // Redirection automatique selon le type
+                                if (item.label.toLowerCase() === "film") {
+                                    window.location.href = "fichfilm.php?id=" + item.id;
+                                } else if (item.label.toLowerCase() === "star") {
+                                    window.location.href = "fichacteur.php?id=" + item.id;
+                                }
+                            };
+
+                            box.appendChild(div);
+                        });
+
+                        const rect = input.getBoundingClientRect();
+                        box.style.left = rect.left + "px";
+                        box.style.top = (rect.bottom + window.scrollY) + "px";
+                        box.style.width = rect.width + "px";
+
+                        box.style.display = 'block';
+                    });
+        });
+
+        document.addEventListener('click', function (e) {
+            if (!box.contains(e.target) && e.target !== input) {
+                box.style.display = 'none';
+            }
+        });
+
+    });
+
+</script>    </head>
+    <body>
+        <table class="tablelarge0">
+    <tr>
+        <td width="50%" valign="middle">
+            <div class="form_search">
+                <form method="post" action="search.php">
+                    <input name="search" id="searchInput" type="text" autocomplete="off"
+                           placeholder="Que recherchez-vous? un film, une star,..." />
+                    <div id="suggestionsBox"
+                         style="position:absolute; background:white; border:1px solid #ccc; display:none;
+                         max-height:200px; overflow-y:auto; width:300px; z-index:9999;">
+                    </div>
+                    <input type="image" src="cinema/images/menu/searchicon.gif" name="submit" />
+                </form>
+            </div></td>
+        <td>
+            <div align="right">
+                    <button onclick="document.getElementById('id01').style.display = 'block'" class="modal-loginbtn"><i class="fa-solid fa-right-to-bracket"></i>Se connecter</button>
+                    <button onclick="document.getElementById('id03').style.display = 'block'" class="modal-loginbtn"><i class="fa-solid fa-user-plus"></i>Cr&eacute;er un compte</button>
+                <button onclick="document.getElementById('id02').style.display = 'block'" class="modal-loginbtn"><i class="fa-solid fa-envelope"></i>Ecrire</button>
+            </div>
+        </td>
+    </tr>
+</table>
+<nav id="nav1">
+    <div id="logo"><span class="logo_span">JP</span>Box-Office</div>
+    <ul class="menu">
+        <li><a href="index.php"><span style="padding-left: 5px;padding-right: 5px;"><i class="fa-solid fa-house"></i></span></a></li>
+        <li>
+            <a href="#">France</a>
+            <ul>
+                <li><a href="v9_main_country.php?view=2">G&eacute;n&eacute;ralit&eacute;s</a></li>
+                <li><a href="v9_charts_total.php?view=2">Entr&eacute;es</a>
+                    <ul>
+                        <li><a href="v9_charts_total.php?view=2&filtre=datefr&infla=0&variable=2026">Classement 2026</a></li>
+                        <li><a href="v9_charts_total.php?view=2&filtre=datefr&infla=0&variable=2025">Classement 2025</a></li>
+                    </ul>
+                </li>
+                <li><a href="#"><span style="padding-right: 5px;"><i class="fa-solid fa-angle-right"></i></span>Autres classements</a>
+                    <ul>
+                        <li><a href="v9_avantpremiere.php?view=2">Avant-Premi&egrave;res</a></li>
+                        <li><a href="v9_1seance.php?view=2">Premi&egrave;res S&eacute;ances</a></li>
+                        <li><a href="v9_1jour.php?view=2">Premiers Jours</a></li>
+                        <li><a href="v9_1weekend.php?view=2">Premiers WeekEnds</a></li>
+                        <li><a href="v9_demarrage.php?view=2">Premi&egrave;res Semaines</a></li>
+                        <li><a href="v9_top_semaines.php?view=2">Autres Semaines</a></li>
+                    </ul>
+                </li>
+                <li><a href="bilanfr.php">Bilans Annuels</a></li>
+                <li><a href="v9_hebdomadaire.php?view=2">Suivi Hebdo</a></li>
+                <li><a href="v9_club.php?view=2">Club des Millionaires</a></li>
+                <li><a href="v9_records_pays.php?view=2">Quelques Records</a></li>
+                <li>
+                    <a href="#"><span style="padding-right: 5px;"><i class="fa-solid fa-angle-right"></i></span>Plus de chiffres</a>
+                    <ul>
+                        <li><a href="v9_overseas_classgen.php?idpays=25">Recettes</a></li>
+                        <li><a href="sallesf.php">Chiffres des Cin&eacute;mas</a></li>
+                        <li><a href="cnc.php">D&eacute;mographie</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+        <li>
+            <a href="#"><span style="padding-left: 5px;padding-right: 5px;"><i class="fa-solid fa-flag-usa"></i></span>Etats-Unis</a>
+            <ul>
+                <li><a href="v9_main_country.php?view=1">G&eacute;n&eacute;ralit&eacute;s</a></li>
+                <li><a href="v9_charts_total.php?view=1">Recettes</a>
+                    <ul>
+                        <li><a href="v9_charts_total.php?view=1&filtre=dateus&infla=0&variable=2026">Classement 2026</a></li>
+                        <li><a href="v9_charts_total.php?view=1&filtre=dateus&infla=0&variable=2025">Classement 2025</a></li>
+                    </ul>
+                </li> 
+                <li><a href="#"><span style="padding-right: 5px;"><i class="fa-solid fa-angle-right"></i></span>Autres classements</a>
+                    <ul><li><a href="v9_avantpremiere.php?view=1">Exploitations limit&eacute;es</a></li>
+                        <li><a href="v9_1seance.php?view=1">Premi&egrave;res S&eacute;ances</a></li>
+                        <li><a href="v9_1jour.php?view=1">Premiers Jours</a></li>
+                        <li><a href="v9_top_jours.php?view=1">Autres Jours</a></li>
+                        <li><a href="v9_1weekend.php?view=1">Premiers WeekEnds</a></li>
+                        <li><a href="v9_top_semaines.php?view=1">Autres WeekEnds</a></li>
+                        <li><a href="v9_demarrage.php?view=1">Premi&egrave;res Semaines</a></li>
+                    </ul>
+                </li>
+                <li><a href="v9_bilan_pays.php?view=1">Bilans Annuels</a></li>
+                <li><a href="v9_hebdomadaire.php?view=1">Suivi Hebdo</a></li>
+                <li><a href="v9_club.php?view=1">Club des 100M$</a></li>
+                <li><a href="v9_records_pays.php?view=1">Quelques Records</a></li>
+                <li>
+                    <a href="#"><span style="padding-right: 5px;"><i class="fa-solid fa-angle-right"></i></span>March&eacute; Vid&eacute;o</a>
+                    <ul>
+                        <li><a href="v9_charts_general_video.php?view=br">Ventes Blu-Ray</a></li>
+                        <li><a href="v9_charts_general_video.php?view=dvd">Ventes DVD</a></li>
+                        <li><a href="v9_charts_general_video.php?view=vhs">Ventes VHS</a></li>
+                        <li><a href="v9_charts_general_video.php?view=brL">Locations Blu-Ray</a></li>
+                        <li><a href="v9_charts_general_video.php?view=dvdL">Locations DVD</a></li>
+                        <li><a href="v9_charts_general_video.php?view=vhsL">Locations VHS</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+        <li>
+            <a href="#">Paris</a>
+            <ul>
+                <li><a href="v9_main_country.php?view=3">G&eacute;n&eacute;ralit&eacute;s</a></li>
+                <li><a href="v9_charts_total.php?view=3">Entr&eacute;es</a>
+                    <ul>
+                        <li><a href="v9_charts_total.php?view=3&filtre=datefr&infla=0&variable=2026">Classement 2026</a></li>
+                        <li><a href="v9_charts_total.php?view=3&filtre=datefr&infla=0&variable=2025">Classement 2025</a></li>
+                    </ul>
+                </li>
+                <li><a href="#"><span style="padding-right: 5px;"><i class="fa-solid fa-angle-right"></i></span>Autres classements</a>
+                    <ul>
+                        <li><a href="v9_1seance.php?view=3">Premi&egrave;res S&eacute;ances</a></li>
+                        <li><a href="v9_1jour.php?view=3">Premiers Jours</a></li>
+                        <li><a href="v9_top_jours.php?view=3">Autres Jours</a></li>
+                        <li><a href="v9_1weekend.php?view=3">Premiers WeekEnds</a></li>
+                        <li><a href="v9_demarrage.php?view=3">Premi&egrave;res Semaines</a></li>
+                        <li><a href="v9_top_semaines.php?view=3">Autres Semaines</a></li>
+                    </ul>
+                </li>
+                <li><a href="v9_bilan_pays.php?view=3">Bilans Annuels</a></li>
+                <li><a href="v9_hebdomadaire.php?view=3">Suivi Hebdo</a></li>
+                <li><a href="v9_club.php?view=3">Club des Millionaires</a></li>
+                <li><a href="v9_records_pays.php?view=3">Quelques Records</a></li>
+            </ul>
+        </li>
+        <li>
+            <a href="#">Autres Pays</a>
+            <ul>
+                <li>
+                    <a href="#"><span style="padding-right: 5px;"><i class="fa-solid fa-angle-right"></i></span>Allemagne</a>
+                    <ul>
+                        <li><a href="v9_main_country.php?view=4">G&eacute;n&eacute;ralit&eacute;s</a></li>
+                        <li><a href="v9_charts_total.php?view=4">Entr&eacute;es</a></li>
+                        <li><a href="v9_1weekend.php?view=4">Premiers WeekEnds</a></li>
+                        <li><a href="v9_demarrage.php?view=4">Premi&egrave;res Semaines</a></li>
+                        <li><a href="v9_top_semaines.php?view=4">Autres Semaines</a></li>
+                        <li><a href="v9_bilan_pays.php?view=4">Bilans Annuels</a></li>
+                        <li><a href="v9_hebdomadaire.php?view=4">Suivi Hebdo</a></li>
+                        <li><a href="v9_club.php?view=4">Club des Millionaires</a></li>
+                        <li><a href="v9_records_pays.php?view=4">Quelques Records</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#"><span style="padding-right: 5px;"><i class="fa-solid fa-angle-right"></i></span>Br&eacute;sil</a>
+                    <ul>
+                        <li><a href="v9_main_country.php?view=36">G&eacute;n&eacute;ralit&eacute;s</a></li>
+                        <li><a href="v9_charts_total.php?view=36">Entr&eacute;es</a></li>
+                        <li><a href="v9_demarrage.php?view=36">Premiers WeekEnds</a></li>
+                        <li><a href="v9_top_semaines.php?view=36">Autres WeekEnds</a></li>
+                        <li><a href="v9_bilan_pays.php?view=36">Bilans Annuels</a></li>
+                        <li><a href="v9_hebdomadaire.php?view=36">Suivi Hebdo</a></li>
+                        <li><a href="v9_club.php?view=36">Club des Millionaires</a></li>
+                        <li><a href="v9_records_pays.php?view=36">Quelques Records</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#"><span style="padding-right: 5px;"><i class="fa-solid fa-angle-right"></i></span>Chine</a>
+                    <ul>
+                        <li><a href="v9_main_country.php?view=30">G&eacute;n&eacute;ralit&eacute;s</a></li>
+                        <li><a href="v9_charts_total.php?view=30">Entr&eacute;es</a></li>
+                        <li><a href="v9_1jour.php?view=30">Premiers Jours</a></li>
+                        <li><a href="v9_top_jours.php?view=30">Autres Jours</a></li>
+                        <li><a href="v9_demarrage.php?view=30">Premiers Semaines</a></li>
+                        <li><a href="v9_top_semaines.php?view=30">Autres Semaines</a></li>  
+                        <li><a href="v9_bilan_pays.php?view=30">Bilans Annuels</a></li>
+                        <li><a href="v9_hebdomadaire.php?view=30">Suivi Hebdo</a></li>
+                        <li><a href="v9_club.php?view=30">Club des Millionaires</a></li>
+                        <li><a href="v9_records_pays.php?view=30">Quelques Records</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#"><span style="padding-right: 5px;"><i class="fa-solid fa-angle-right"></i></span>Cor&eacute;e du Sud</a>
+                    <ul>
+                        <li><a href="v9_main_country.php?view=34">G&eacute;n&eacute;ralit&eacute;s</a></li>
+                        <li><a href="v9_charts_total.php?view=34">Entr&eacute;es</a></li>
+                        <li><a href="v9_demarrage.php?view=34">Premiers WeekEnds</a></li>
+                        <li><a href="v9_top_semaines.php?view=34">Autres WeekEnds</a></li>
+                        <li><a href="v9_bilan_pays.php?view=34">Bilans Annuels</a></li>
+                        <li><a href="v9_hebdomadaire.php?view=34">Suivi Hebdo</a></li>
+                        <li><a href="v9_club.php?view=34">Club des Millionaires</a></li>
+                        <li><a href="v9_records_pays.php?view=34">Quelques Records</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#"><span style="padding-right: 5px;"><i class="fa-solid fa-angle-right"></i></span>Espagne</a>
+                    <ul>
+                        <li><a href="v9_main_country.php?view=33">G&eacute;n&eacute;ralit&eacute;s</a></li>
+                        <li><a href="v9_charts_total.php?view=33">Entr&eacute;es</a></li>
+                        <li><a href="v9_demarrage.php?view=33">Premiers WeekEnds</a></li>
+                        <li><a href="v9_top_semaines.php?view=33">Autres WeekEnds</a></li>
+                        <li><a href="v9_bilan_pays.php?view=33">Bilans Annuels</a></li>
+                        <li><a href="v9_hebdomadaire.php?view=33">Suivi Hebdo</a></li>
+                        <li><a href="v9_club.php?view=33">Club des Millionaires</a></li>
+                        <li><a href="v9_records_pays.php?view=33">Quelques Records</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#"><span style="padding-right: 5px;"><i class="fa-solid fa-angle-right"></i></span>Italie</a>
+                    <ul>
+                        <li><a href="v9_main_country.php?view=32">G&eacute;n&eacute;ralit&eacute;s</a></li>
+                        <li><a href="v9_charts_total.php?view=32">Entr&eacute;es</a></li>
+                        <li><a href="v9_demarrage.php?view=32">Premiers WeekEnds</a></li>
+                        <li><a href="v9_top_semainesp.php?view=32">Autres WeekEnds</a></li>
+                        <li><a href="v9_bilan_pays.php?view=32">Bilans Annuels</a></li>
+                        <li><a href="v9_hebdomadaire.php?view=32">Suivi Hebdo</a></li>
+                        <li><a href="v9_club.php?view=32">Club des Millionaires</a></li>
+                        <li><a href="v9_records_pays.php?view=32">Quelques Records</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#"><span style="padding-right: 5px;"><i class="fa-solid fa-angle-right"></i></span>Russie</a>
+                    <ul>
+                        <li><a href="v9_main_country.php?view=35">G&eacute;n&eacute;ralit&eacute;s</a></li>
+                        <li><a href="v9_charts_total.php?view=35">Entr&eacute;es</a></li>
+                        <li><a href="v9_demarrage.php?view=35">Premiers WeekEnds</a></li>
+                        <li><a href="v9_top_semaines.php?view=35">Autres WeekEnds</a></li>
+                        <li><a href="v9_bilan_pays.php?view=35">Bilans Annuels</a></li>
+                        <li><a href="v9_hebdomadaire.php?view=35">Suivi Hebdo</a></li>
+                        <li><a href="v9_club.php?view=35">Club des Millionaires</a></li>
+                        <li><a href="v9_records_pays.php?view=35">Quelques Records</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+        <li>
+            <a href="#"><span style="padding-left: 5px;padding-right: 5px;"><i class="fa-solid fa-globe"></i></span>Monde</a>
+            <ul>
+                <li><a href="v9_main_country.php?view=6">G&eacute;n&eacute;ralit&eacute;s</a></li>
+                <li><a href="v9_charts_total.php?view=6">Recettes Mondiales</a>
+                    <ul>
+                        <li><a href="v9_charts_total.php?view=6&filtre=production&infla=0&variable=2026">Classement 2026</a></li>
+                        <li><a href="v9_charts_total.php?view=6&filtre=production&infla=0&variable=2025">Classement 2025</a></li>
+                    </ul>
+                </li>
+                <li><a href="v9_charts_total.php?view=5">Recettes Inter.</a>
+                    <ul>
+                        <li><a href="v9_charts_total.php?view=5&filtre=production&infla=0&variable=2026">Classement 2026</a></li>
+                        <li><a href="v9_charts_total.php?view=5&filtre=production&infla=0&variable=2025">Classement 2025</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#"><span style="padding-right: 5px;"><i class="fa-solid fa-angle-right"></i></span>Chiffres Hebdos</a>
+                    <ul>
+                        <li><a href="v9_top_semaines_monde.php">WeekEnds Monde</a></li>
+                        <li><a href="v9_top_semaines.php?view=5">WeekEnds Intern.</a></li>
+                        <li><a href="v9_hebdomadaire.php?view=5">Suivi Hebdo</a></li>
+                    </ul>
+                </li>
+                <li><a href="v9_bilan_pays.php?view=6">Bilans Annuels</a></li>
+                <li><a href="v9_france_export.php">Entr&eacute;es Prod. France</a>
+                <li><a href="v9_overseas_main.php">Top Recettes March&eacute;s</a></li>
+                <li><a href="v9_club.php?view=5">Club des 100M$</a></li>
+                <li><a href="v9_records_pays.php?view=5">Quelques Records</a></li>
+            </ul>
+        </li>
+        <li><a href="#"><span style="padding-left: 5px;padding-right: 5px;"><i class="fa-solid fa-people-group"></i></span>Stars</a>
+            <ul>
+                <li><a href="bigacteurs.php">
+                        <span style="padding-right: 5px;"><i class="fa-solid fa-users-viewfinder"></i></span>Acteurs</a></li>
+                <li><a href="bigacteurs.php?tri=2">
+                        <span style="padding-right: 5px;"><i class="fa-solid fa-camera"></i></span>R&eacute;alisateurs</a></li>
+                <li><a href="bigacteurs.php?tri=3">
+                        <span style="padding-right: 5px;"><i class="fa-solid fa-hand-holding-dollar"></i></span>Producteurs</a></li>
+                <li><a href="bigacteurs.php?tri=4">
+                        <span style="padding-right: 5px;"><i class="fa-solid fa-pencil"></i></span>Sc&eacute;naristes</a></li>
+                <li><a href="bigacteurs.php?tri=6">
+                        <span style="padding-right: 5px;"><i class="fa-solid fa-music"></i></span>Compositeurs</a></li>
+                <li><a href="bigacteurs.php?tri=5">
+                        <span style="padding-right: 5px;"><i class="fa-solid fa-book"></i></span>Ecrivains</a></li>
+                <li><a href="bigsalaires.php">
+                        <span style="padding-right: 5px;"><i class="fa-solid fa-money-bill-wave"></i></span>Salaires</a></li>
+                <li><a href="populairestars.php">
+                        <span style="padding-right: 5px;"><i class="fa-solid fa-ranking-star"></i></span>Popularit&eacute;</a></li>
+            </ul>
+        </li>
+        <li>
+            <a href="#"><span style="padding-left: 5px;padding-right: 5px;"><i class="fa-solid fa-film"></i></span>Films</a>
+            <ul>
+                <li><a href="v9_filmlst.php">
+                        <span style="padding-right: 5px;"><i class="fa-solid fa-arrow-down-z-a"></i></span>
+                        Liste Alphab&eacute;tique</a></li>
+                <li><a href="v9_pays.php">
+                        <span style="padding-right: 5px;"><i class="fa-solid fa-earth-europe"></i></span>
+                        Pays</a></li>
+                <li><a href="v9_genres.php"><span style="padding-right: 5px;"><i class="fa-solid fa-icons"></i></span>
+                        Genres</a></li>
+                <li><a href="franchises.php"><span style="padding-right: 5px;"><i class="fa-solid fa-industry"></i></span>
+                        Franchises</a></li>
+                <li><a href="budgets.php"><span style="padding-right: 5px;"><i class="fa-solid fa-sack-dollar"></i></span>
+                        Budgets</a></li>
+                <li><a href="bigprix.php"><span style="padding-right: 5px;"><i class="fa-solid fa-award"></i></span>
+                        R&eacute;compenses</a></li>
+                <li><a href="populaire.php"><span style="padding-right: 5px;"><i class="fa-solid fa-ranking-star"></i></span>
+                        Popularit&eacute;</a></li>
+            </ul>
+        </li>
+        <li>
+            <a href="#">Divers</a>
+            <ul>
+                <li><a href="v9_members_abonnes.php"><span style="padding-right: 5px;"><i class="fa-solid fa-user-group"></i></span>
+                        Les Membres</a></li>
+                <li><a href="v9_members_notes.php"><span style="padding-right: 5px;"><i class="fa-solid fa-arrow-down-9-1"></i></span>
+                        Les Notes</a></li>
+                <li><a href="v9_members_stats.php"><span style="padding-right: 5px;"><i class="fa-solid fa-chart-area"></i></span>
+                        Stats des membres</a></li>
+                <li><a href="v9_misc_links.php"><span style="padding-right: 5px;"><i class="fa-solid fa-link"></i></span>
+                        Liens</a></li>
+            </ul>
+        </li>
+        <li><a href="ratings.php"><span style="padding-left: 5px;padding-right: 5px;"><i class="fa-solid fa-circle-question"></i></span></a></li>
+        <li><a href="v9_avenir.php?fixe=1&date=2026-08-22"><span style="padding-left: 5px;padding-right: 5px;"><i class="fa-solid fa-calendar-days"></i></span></a></li>
+    </ul>
+</nav>
+<div id="id01" class="modal"> <!-- FENETRE MODALE POUR LE LOGIN !-->
+    <form class="modal-content modal-animate" action="/v9_avenir.php?view=2&date=2026-08-26&fixe=1" method="POST">
+        <div class="modal-container">Se connecter</div>
+        <div onclick="document.getElementById('id01').style.display = 'none'" class="modal-close" title="Close Modal">&times;</div>
+        <div class="modal-input-group">
+            <div class="modal-input-group2">
+                <i class="fa-solid fa-user" style="vertical-align: middle"></i>
+                <input class="modal-input-field" type="text" placeholder="Identifiant" name="TB_Nom_Utilisateur" required>
+            </div>
+            <div class="modal-input-group2">
+                <i class="fa-solid fa-key" style="vertical-align: middle"></i>
+                <input class="modal-input-field" type="password" placeholder="Mot de Passe" name="TB_Mot_de_Passe" required>
+            </div>
+            <div class="espace1">&nbsp;</div>
+            <button type="submit" class="modal-loginbtn2">Connexion
+                <i class="fa-solid fa-chevron-right"></i></button>
+            <label class="modal-label">
+                <input type="checkbox" checked="checked" name="CB_Connexion_Automatique">Se souvenir de moi
+            </label>
+        </div>
+        <div class="modal-container">
+            <button onclick="document.getElementById('id01').style.display = 'none'; document.getElementById('id04').style.display = 'block'">Mot de passe perdu ?</button>
+        </div>
+    </form>
+</div>
+<div id="id02" class="modal2"><!-- FENETRE MODALE POUR ECRIRE !-->
+    <form class="modal-content animate" action="/v9_avenir.php?view=2&date=2026-08-26&fixe=1" method="POST">
+        <div class="modal-container">Ecrire un message</div>
+        <div onclick="document.getElementById('id02').style.display = 'none'" class="modal-close" title="Close Modal">&times;</div>
+        <div class="modal-input-group">
+            <div class="modal-input-group2">
+                <i class="fa-solid fa-user" style="vertical-align: middle"></i>
+                <input class="modal-input-field" type="text" placeholder="Identifiant" name="email_nom" value="Votre nom" required>
+            </div>
+            <div class="modal-input-group2">
+                <i class="fa-solid fa-tags" style="vertical-align: middle"></i>
+                <input class="modal-input-field" type="text" name="email_sujet" placeholder="(Saisir le sujet)">
+            </div>
+            <div class="modal-input-group2">
+                <i class="fa-solid fa-envelope" style="vertical-align: middle"></i>
+                <input class="modal-input-field" type="email" name="email_mail" value="Votre adresse email">
+            </div>
+            <div class="espace1">&nbsp;</div>
+            <textarea style="margin-left: 20px;" class="modal-input-field" name="email_msg" rows="8" cols="100" placeholder="(Votre message)"></textarea>
+            <button type="submit" class="modal-loginbtn2">Envoyer
+                <i class="fa-solid fa-chevron-right"></i></button>
+        </div>
+    </form>
+</div>
+<div id="id03" class="modal"><!-- CREER UN COMPTE !-->
+    <form class="modal-content modal-animate" action="creer-compte-utilisateur.php" method="POST">
+        <div class="modal-container">Cr&eacute;er un compte</div>
+        <div onclick="document.getElementById('id03').style.display = 'none'" class="modal-close" title="Close Modal">&times;</div>
+        <div class="modal-input-group">
+            <div class="modal-input-group2">
+                <i class="fa-solid fa-user" style="vertical-align: middle"></i>
+                <input class="modal-input-field" type="text" placeholder="(Identifiant - 4 &agrave; 20 caract&egrave;res)" name="TB_Nom_Utilisateur" required>
+            </div>
+            <div class="modal-input-group2">
+                <i class="fa-solid fa-key" style="vertical-align: middle"></i>
+                <input class="modal-input-field" type="password" placeholder="(Mot de Passe - 6 caract&egrave;res)" name="TB_Mot_de_Passe" required>
+            </div>
+            <div class="modal-input-group2">
+                <i class="fa-solid fa-key" style="vertical-align: middle"></i>
+                <input class="modal-input-field" type="password" placeholder="(Mot de Passe - 6 caract&egrave;res)" name="TB_Confirmation_Mot_de_Passe" required>
+            </div>
+            <div class="modal-input-group2">
+                <i class="fa-solid fa-envelope" style="vertical-align: middle"></i>
+                <input class="modal-input-field" type="email" placeholder="Votre adresse email" name="TB_Adresse_Email" required>
+            </div>
+            <div class="espace1">&nbsp;</div>
+            <button type="submit" class="modal-loginbtn2">Cr&eacute;ation
+                <i class="fa-solid fa-chevron-right"></i></button>
+        </div>
+    </form>
+</div>
+<div id="id04" class="modal"><!-- PERTE DE MDP !-->
+    <form class="modal-content modal-animate" action="game_MDP.php" method="POST">
+        <div class="modal-container">Mot de passe perdu</div>
+        <div onclick="document.getElementById('id04').style.display = 'none'" class="modal-close" title="Close Modal">&times;</div>
+        <div class="modal-input-group">
+            <div class="modal-input-group2">
+                <i class="fa-solid envelope" style="vertical-align: middle"></i>
+                <input class="modal-input-field" type="email" placeholder="Votre adresse email" name="TB_Adresse_Email" required>
+            </div>
+            <div class="espace1">&nbsp;</div>
+            <button type="submit" class="modal-loginbtn2">Renvoyer
+                <i class="fa-solid fa-chevron-right"></i></button>
+        </div>
+    </form>
+</div>        <div id="content">
+                            <h1 class="titrelarge1">LE CALENDRIER DES SORTIES FRANCE                    <br/>SEMAINE DU Mercredi 26/08/2026                </h1>
+                        <div id="nav2">
+                <ul>
+                    <li><a href="/v9_avenir.php?view=2">France</a></li>
+                    <li><a href="/v9_avenir.php?view=1">Etats-Unis</a></li>
+                    <li><a href="/v9_avenir.php?view=4">Allemagne</a></li>
+                    <li><a href="/v9_avenir.php?view=36">Br&eacute;sil</a></li>
+                    <li><a href="/v9_avenir.php?view=30">Chine</a></li>
+                    <li><a href="/v9_avenir.php?view=34">Cor&eacute;e du Sud</a></li>
+                    <li><a href="/v9_avenir.php?view=33">Espagne</a></li>
+                    <li><a href="/v9_avenir.php?view=32">Italie</a></li>      
+                    <li><a href="/v9_avenir.php?view=35">Russie</a></li>      
+                    <li><a href=/v9_avenir.php?view=999">Planning des MAJ</a></li>
+                                            <li><a href="#">Navigation</a>
+                            <ul>
+                                <li>
+                                    <a href="/v9_avenir.php?date=2026-08-26&view=2">
+                                        Sorties Ao&ucirc;t 2026</a></li>
+                                                            </ul>
+                        </li>
+                                    </ul>
+            </div>
+            <table class="tablelarge1">
+                <tr valign="top">
+                    <td>                                    <table class="tablesmall tablesmall3">
+                                        <tr>
+                                            <td colspan="2" class="celluletitre">
+                                                <a href="fichfilm.php?id=25350&view=2">In the Grey</a>
+                                                                  
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td rowspan="3" width="125">                                                    <img src="cinema/images/posters/A-2026-25350-20260501035819.jpg"/>
+                                                </td>
+                                            <td class="col_poster_titre">Aventure - Action - Grande-Bretagne<br>1h48<br>                                                    <i>Plateforme Streaming</i>
+                                                                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="col_poster_titre"><br>Avec                                                    <a href="fichacteur.php?id=856">Henry Cavill</a>
+                                                                                                         <a href="fichacteur.php?id=192">Jake Gyllenhaal</a>
+                                                                                                         <a href="fichacteur.php?id=955">Rosamund Pike</a>
+                                                    <br>R&eacute;alisation                                                    <a href="fichacteur.php?id=514">Guy Ritchie</a>
+                                                    </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="col_poster_titre"></td>
+                                        </tr>
+                                        <tr>
+                                            <td colspan="2" class="col_poster_contenu_mineur"></td>
+                                        </tr>
+                                    </table>
+                                                                    <table class="tablesmall tablesmall3">
+                                        <tr>
+                                            <td colspan="2" class="celluletitre">
+                                                <a href="fichfilm.php?id=25486&view=2">L'Inconnue (2026)</a>
+                                                                  
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td rowspan="3" width="125">                                                    <img src="cinema/images/posters/A-2026-25486-20260822054936.jpg"/>
+                                                </td>
+                                            <td class="col_poster_titre">Drame - France<br>2h20<br>                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="col_poster_titre"><br>Avec                                                    <a href="fichacteur.php?id=834">Léa Seydoux</a>
+                                                    </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="col_poster_titre"></td>
+                                        </tr>
+                                        <tr>
+                                            <td colspan="2" class="col_poster_contenu_mineur">A? bientôt 40 ans, David Zimmerman est photographe mais personne ne le sait. Alors qu'il ne sort presque jamais de chez lui, des amis le traînent dans une fête insensée. Il y repère une femme dans la foule, ne peut en détacher le regard, la suit... Quelques heures plus tard, David se réveille : il est dans le corps de l’inconnue. ...</td>
+                                        </tr>
+                                    </table>
+                                                                    <table class="tablesmall tablesmall3">
+                                        <tr>
+                                            <td colspan="2" class="celluletitre">
+                                                <a href="fichfilm.php?id=25479&view=2">Tad l'explorateur et la lampe magique<br>Tadeo Jones y la lámpara maravillosa</a>
+                                                                  
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td rowspan="3" width="125">                                                    <img src="cinema/images/posters/A-2026-25479-20260802064547.jpg"/>
+                                                </td>
+                                            <td class="col_poster_titre">Animation - Espagne<br>1h35<br>                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="col_poster_titre"></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="col_poster_titre"></td>
+                                        </tr>
+                                        <tr>
+                                            <td colspan="2" class="col_poster_contenu_mineur">Tad et Sara sont désormais les heureux parents d’Oli, une adorable et intrépide petite fille de deux ans. Le bonheur de la petite famille fait un peu de l’ombre à Momie, qui a l’impression de passer au second plan. Alors qu’en vacances à Londres la bande met la main sur la Lampe Merveilleuse des Mille et Une Nuits, Momie formule un vœu inattendu :  ...</td>
+                                        </tr>
+                                    </table>
+                                                                    <table class="tablesmall tablesmall3">
+                                        <tr>
+                                            <td colspan="2" class="celluletitre">
+                                                <a href="fichfilm.php?id=25334&view=2">The Dog Stars</a>
+                                                                  
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td rowspan="3" width="125">                                                    <img src="cinema/images/posters/A-2026-25334-20260822054806.jpg"/>
+                                                </td>
+                                            <td class="col_poster_titre">Science Fiction - Etats-Unis<br>1h59<br>                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="col_poster_titre"><br>Avec                                                    <a href="fichacteur.php?id=705">Josh Brolin</a>
+                                                                                                         <a href="fichacteur.php?id=152">Guy Pearce</a>
+                                                    <br>R&eacute;alisation                                                    <a href="fichacteur.php?id=309">Ridley Scott</a>
+                                                    </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="col_poster_titre"></td>
+                                        </tr>
+                                        <tr>
+                                            <td colspan="2" class="col_poster_contenu_mineur">Dans un futur proche où une pandémie sans nom a décimé la société américaine, Hig, un pilote vit sur une base aérienne abandonnée du Colorado avec son chien et un ex-marine. Lorsqu'une transmission aléatoire passe par la radio de son Cessna 1956, la voix fait naître au plus profond du pilote l'espoir qu'une vie meilleure existe en dehors de leur pé ...</td>
+                                        </tr>
+                                    </table>
+                                                                <div class="espace1">&nbsp;</div>
+                                                    </td>
+                    <td>
+                                                    <table class="tablesmall tablesmall1">
+                                <tr><td colspan="2" class="celluletitre">
+                                        BON ANNIVERSAIRE
+                                    </td>
+                                </tr>
+                                                                    <tr>                                            <td>&nbsp;</td>
+                                                                                <td><a href="fichacteur.php?id=832">Melissa McCarthy</a></td>
+                                    </tr>
+                                                                        <tr>                                            <td>&nbsp;</td>
+                                                                                <td><a href="fichacteur.php?id=820">Chris Pine</a></td>
+                                    </tr>
+                                                                        <tr>                                            <td>&nbsp;</td>
+                                                                                <td><a href="fichacteur.php?id=482">Barbet Schroeder</a></td>
+                                    </tr>
+                                                                </table>
+                        </td>
+                </tr>
+            </table>
+        </div>
+        <div class="bloclarge2">JP Box-Office (Depuis Juillet 1998)<br />
+    Version 9.2.3<br /><br />
+25 623 films r&eacute;f&eacute;renc&eacute;s - 1 015 filmographies - 1 443 membres</div>
+    </body>
+</html>

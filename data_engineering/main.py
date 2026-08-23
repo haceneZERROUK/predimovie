@@ -1,5 +1,7 @@
 # API du scraper : N8n appelle ces routes en HTTP pour déclencher
 # les différentes étapes du pipeline (voir data_engineering/pipeline.py).
+from datetime import date
+
 from fastapi import Depends, FastAPI, Header, HTTPException
 
 from data_engineering.config import JPBOX_VUE_FRANCE, SCRAPER_API_KEY
@@ -19,11 +21,12 @@ def verifier_cle_api(x_api_key: str = Header(default="")):
 
 
 @app.post("/scrape/upcoming", dependencies=[Depends(verifier_cle_api)])
-def scrape_upcoming():
-    """Flux A : récupère les films bientôt en salle (métadonnées TMDB)."""
+def scrape_upcoming(date_sortie: date | None = None):
+    """Flux A : récupère tous les films qui sortent un mercredi donné
+    (le prochain par défaut) via le calendrier JPBOX."""
     session = SessionLocal()
     try:
-        nb_films = traiter_films_a_venir(session)
+        nb_films = traiter_films_a_venir(session, date_sortie=date_sortie)
         return {"nb_films_traites": nb_films}
     finally:
         session.close()

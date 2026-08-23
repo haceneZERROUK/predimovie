@@ -1,7 +1,7 @@
 {% extends "predictions/base.html" %}
 {% block contenu %}
-<h1 class="text-2xl font-bold text-white mb-2">Top 10 des prochaines sorties</h1>
-<p class="text-gray-400 mb-6">Films pas encore sortis, classes par entrees premiere semaine predites.</p>
+<h1 class="text-2xl font-bold text-white mb-2">Sorties du mercredi prochain</h1>
+<p class="text-gray-400 mb-6">Films sortant en salle mercredi prochain, classes par entrees premiere semaine predites.</p>
 
 {% if predictions %}
 <div class="bg-gray-800 rounded-lg overflow-hidden">
@@ -19,7 +19,7 @@
       <tr class="text-gray-300">
         <td class="px-6 py-4">{{ forloop.counter }}</td>
         <td class="px-6 py-4 font-medium text-white">{{ prediction.nom_francais }}</td>
-        <td class="px-6 py-4">{{ prediction.date_sortie|default:"inconnue" }}</td>
+        <td class="px-6 py-4">{{ prediction.date_sortie|date:"d/m/Y"|default:"inconnue" }}</td>
         <td class="px-6 py-4 text-green-400">{{ prediction.entrees_premiere_semaine_predites }}</td>
       </tr>
       {% endfor %}
