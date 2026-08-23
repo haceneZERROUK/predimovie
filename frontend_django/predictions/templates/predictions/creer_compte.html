@@ -1,36 +1,42 @@
 {% extends "predictions/base.html" %}
 {% block contenu %}
-<h1 class="text-2xl font-bold text-white mb-2">Nouveau cinema</h1>
-<p class="text-gray-400 mb-6">Cree un compte pour un nouveau cinema client.</p>
+<div class="flex items-center gap-2 mb-1">
+  <span class="w-2 h-2 bg-accent inline-block"></span>
+  <span class="label-caps text-ink-tertiary">predimovie / comptes / nouveau</span>
+</div>
+<h1 class="text-xl font-bold text-ink-primary mb-6">NOUVEAU.CINEMA</h1>
 
-<div class="bg-gray-800 p-8 rounded-lg shadow-lg max-w-md">
+<div class="bg-panel border border-hair p-8 max-w-md">
   <form method="post" class="space-y-6">
     {% csrf_token %}
     <div>
-      <label for="nom_cinema" class="block text-sm font-medium text-gray-300 mb-2">Nom du cinema</label>
+      <label for="nom_cinema" class="block label-caps text-ink-tertiary mb-2">Nom du cinema</label>
       <input type="text" id="nom_cinema" name="nom_cinema" required
-        class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+        class="w-full px-3 py-2 bg-ink border border-hair text-ink-primary focus:outline-none focus:border-accent text-sm"
         placeholder="Cinema Le Central">
     </div>
     <div>
-      <label for="mail" class="block text-sm font-medium text-gray-300 mb-2">Mail</label>
+      <label for="mail" class="block label-caps text-ink-tertiary mb-2">Mail</label>
       <input type="email" id="mail" name="mail" required
-        class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+        class="w-full px-3 py-2 bg-ink border border-hair text-ink-primary focus:outline-none focus:border-accent text-sm"
         placeholder="proprietaire@cinema.fr">
     </div>
     <div>
-      <label for="mot_de_passe" class="block text-sm font-medium text-gray-300 mb-2">Mot de passe</label>
+      <label for="mot_de_passe" class="block label-caps text-ink-tertiary mb-2">Mot de passe</label>
       <input type="password" id="mot_de_passe" name="mot_de_passe" required
-        class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+        class="w-full px-3 py-2 bg-ink border border-hair text-ink-primary focus:outline-none focus:border-accent text-sm"
         placeholder="••••••••">
     </div>
     <div class="flex gap-3">
       <button type="submit"
-        class="flex-1 flex items-center justify-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition">
+        class="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-accent text-ink-primary label-caps font-semibold transition">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="16" y1="11" x2="22" y2="11"/></svg>
         Creer le compte
       </button>
       <a href="{% url 'predictions:comptes' %}"
-        class="px-4 py-2 text-gray-400 hover:text-white transition">Annuler</a>
+        class="px-4 py-3 text-ink-tertiary hover:text-ink-primary transition label-caps">Annuler</a>
     </div>
   </form>
 </div>

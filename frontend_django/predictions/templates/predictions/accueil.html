@@ -1,12 +1,16 @@
 {% extends "predictions/base.html" %}
 {% block contenu %}
-<h1 class="text-2xl font-bold text-white mb-6">Bienvenue</h1>
-<a href="{% url 'predictions:top10' %}" class="text-purple-400 hover:text-purple-300">
-  Voir le top 10 des prochaines sorties &rarr;
+<div class="flex items-center gap-2 mb-1">
+  <span class="w-2 h-2 bg-accent inline-block"></span>
+  <span class="label-caps text-ink-tertiary">predimovie / accueil</span>
+</div>
+<h1 class="text-xl font-bold text-ink-primary mb-6">BIENVENUE</h1>
+<a href="{% url 'predictions:top10' %}" class="text-accent text-sm">
+  Voir les sorties du mercredi prochain &rarr;
 </a>
 {% if request.session.role == "admin" %}
-<p class="text-gray-400 text-sm mt-4">
-  Compte admin : historique predit/reel, monitoring et relance des predictions dans le menu a gauche.
+<p class="text-ink-tertiary text-sm mt-4">
+  Compte admin : historique predit/reel, monitoring et relance des predictions dans la barre du haut.
 </p>
 {% endif %}
 {% endblock %}

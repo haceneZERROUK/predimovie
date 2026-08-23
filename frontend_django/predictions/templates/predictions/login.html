@@ -1,28 +1,33 @@
 {% extends "predictions/auth_base.html" %}
 {% load static %}
 {% block contenu %}
-<div class="bg-gray-800 p-8 rounded-lg shadow-lg w-full">
-  <div class="flex items-center justify-center space-x-3 mb-8">
-    <img src="{% static 'predictions/logo.svg' %}" alt="" class="w-9 h-9">
-    <h1 class="text-2xl font-bold text-white">Predimovie</h1>
+<div class="bg-panel border border-hair p-8 w-full">
+  <div class="flex items-center justify-center gap-3 mb-2">
+    <img src="{% static 'predictions/logo.svg' %}" alt="" class="w-8 h-8">
+    <h1 class="text-xl font-bold text-ink-primary tracking-tight">PREDIMOVIE</h1>
   </div>
+  <div class="label-caps text-ink-tertiary text-center mb-8">Acces cinema partenaire</div>
 
   <form method="post" class="space-y-6">
     {% csrf_token %}
     <div>
-      <label for="mail" class="block text-sm font-medium text-gray-300 mb-2">Mail</label>
+      <label for="mail" class="block label-caps text-ink-tertiary mb-2">Mail</label>
       <input type="email" id="mail" name="mail" required
-        class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+        class="w-full px-3 py-2 bg-ink border border-hair text-ink-primary focus:outline-none focus:border-accent text-sm"
         placeholder="proprietaire@cinema.fr">
     </div>
     <div>
-      <label for="mot_de_passe" class="block text-sm font-medium text-gray-300 mb-2">Mot de passe</label>
+      <label for="mot_de_passe" class="block label-caps text-ink-tertiary mb-2">Mot de passe</label>
       <input type="password" id="mot_de_passe" name="mot_de_passe" required
-        class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+        class="w-full px-3 py-2 bg-ink border border-hair text-ink-primary focus:outline-none focus:border-accent text-sm"
         placeholder="••••••••">
     </div>
     <button type="submit"
-      class="w-full flex items-center justify-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition">
+      class="w-full flex items-center justify-center gap-2 px-4 py-3 bg-accent text-ink-primary label-caps font-semibold transition">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="11" width="18" height="11" rx="0"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+      </svg>
       Se connecter
     </button>
   </form>

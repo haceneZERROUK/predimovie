@@ -88,6 +88,18 @@ def top10_view(request):
     # tout ce qui sort dans les mois qui viennent), pas besoin de couper a 10
     predictions.sort(key=lambda p: p["entrees_premiere_semaine_predites"], reverse=True)
 
+    # part des entrees predites par rapport au premier du classement, pour
+    # la petite jauge dans le template (juste visuel, pas une vraie metrique)
+    plus_haute_prediction = (
+        predictions[0]["entrees_premiere_semaine_predites"] if predictions else 0
+    )
+    for prediction in predictions:
+        prediction["part_du_max"] = (
+            round(100 * prediction["entrees_premiere_semaine_predites"] / plus_haute_prediction)
+            if plus_haute_prediction
+            else 0
+        )
+
     return render(request, "predictions/top10.html", {"predictions": predictions})
 
 

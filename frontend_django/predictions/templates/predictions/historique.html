@@ -1,39 +1,41 @@
 {% extends "predictions/base.html" %}
 {% block contenu %}
-<h1 class="text-2xl font-bold text-white mb-2">Historique des predictions</h1>
-<p class="text-gray-400 mb-6">
+<div class="flex items-center gap-2 mb-1">
+  <span class="w-2 h-2 bg-accent inline-block"></span>
+  <span class="label-caps text-ink-tertiary">predimovie / historique</span>
+</div>
+<h1 class="text-xl font-bold text-ink-primary mb-2">PREDIT.VS.REEL</h1>
+<p class="text-ink-tertiary text-sm mb-6">
   Films pour lesquels une prediction a ete stockee ET qui sont maintenant sortis (entrees reelles connues).
 </p>
 
 {% if historique %}
-<div class="bg-gray-800 rounded-lg overflow-hidden">
-  <table class="w-full">
-    <thead>
-      <tr class="bg-gray-700">
-        <th class="px-6 py-3 text-left text-sm font-semibold text-gray-300">Film</th>
-        <th class="px-6 py-3 text-left text-sm font-semibold text-gray-300">Predit</th>
-        <th class="px-6 py-3 text-left text-sm font-semibold text-gray-300">Reel</th>
-        <th class="px-6 py-3 text-left text-sm font-semibold text-gray-300">Ecart</th>
-        <th class="px-6 py-3 text-left text-sm font-semibold text-gray-300">Predit le</th>
-      </tr>
-    </thead>
-    <tbody class="divide-y divide-gray-700">
-      {% for ligne in historique %}
-      <tr class="text-gray-300">
-        <td class="px-6 py-4 font-medium text-white">{{ ligne.nom_francais }}</td>
-        <td class="px-6 py-4">{{ ligne.entrees_premiere_semaine_predites }}</td>
-        <td class="px-6 py-4">{{ ligne.entrees_premiere_semaine_reelles }}</td>
-        <td class="px-6 py-4 {% if ligne.ecart < 0 %}text-red-400{% else %}text-yellow-400{% endif %}">
-          {{ ligne.ecart }}
-        </td>
-        <td class="px-6 py-4 text-gray-400 text-sm">{{ ligne.date_prediction }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</div>
+<table class="w-full border-collapse">
+  <thead>
+    <tr class="label-caps text-ink-tertiary">
+      <th class="text-left py-2 px-2 border-b border-hair font-medium">titre</th>
+      <th class="text-right py-2 px-2 border-b border-hair font-medium">predit</th>
+      <th class="text-right py-2 px-2 border-b border-hair font-medium">reel</th>
+      <th class="text-right py-2 px-2 border-b border-hair font-medium">ecart</th>
+      <th class="text-right py-2 px-2 border-b border-hair font-medium">predit_le</th>
+    </tr>
+  </thead>
+  <tbody class="text-sm">
+    {% for ligne in historique %}
+    <tr>
+      <td class="py-3 px-2 border-b border-hair2 text-ink-primary">{{ ligne.nom_francais }}</td>
+      <td class="num py-3 px-2 border-b border-hair2 text-right text-ink-secondary">{{ ligne.entrees_premiere_semaine_predites }}</td>
+      <td class="num py-3 px-2 border-b border-hair2 text-right text-ink-secondary">{{ ligne.entrees_premiere_semaine_reelles }}</td>
+      <td class="num py-3 px-2 border-b border-hair2 text-right {% if ligne.ecart < 0 %}text-red-400{% else %}text-yellow-400{% endif %}">
+        {{ ligne.ecart }}
+      </td>
+      <td class="num py-3 px-2 border-b border-hair2 text-right text-ink-tertiary text-xs">{{ ligne.date_prediction }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
 {% else %}
-<p class="text-gray-400">
+<p class="text-ink-tertiary text-sm">
   Aucun historique pour l'instant (aucun film predit n'est encore sorti, ou aucune prediction stockee).
 </p>
 {% endif %}

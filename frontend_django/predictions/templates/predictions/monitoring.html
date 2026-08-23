@@ -1,31 +1,52 @@
 {% extends "predictions/base.html" %}
 {% block contenu %}
-<h1 class="text-2xl font-bold text-white mb-6">Monitoring de l'API</h1>
+<div class="flex items-center gap-2 mb-1">
+  <span class="w-2 h-2 bg-accent inline-block"></span>
+  <span class="label-caps text-ink-tertiary">predimovie / monitoring</span>
+</div>
+<h1 class="text-xl font-bold text-ink-primary mb-6">API.STATUS</h1>
 
 {% if metriques %}
-<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-  <div class="bg-gray-800 rounded-lg p-6">
-    <h3 class="text-lg font-semibold text-gray-300 mb-2">Requetes totales</h3>
-    <p class="text-3xl font-bold text-white">{{ metriques.total_requetes }}</p>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-px bg-hair border border-hair mb-6">
+  <div class="bg-panel p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="label-caps text-ink-tertiary">Requetes totales</h3>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round" class="text-accent">
+        <path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/>
+      </svg>
+    </div>
+    <p class="num text-3xl font-bold text-ink-primary">{{ metriques.total_requetes }}</p>
   </div>
-  <div class="bg-gray-800 rounded-lg p-6">
-    <h3 class="text-lg font-semibold text-gray-300 mb-2">Appels a /predict</h3>
-    <p class="text-3xl font-bold text-white">{{ metriques.requetes_predict }}</p>
+  <div class="bg-panel p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="label-caps text-ink-tertiary">Appels a /predict</h3>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round" class="text-accent">
+        <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/>
+      </svg>
+    </div>
+    <p class="num text-3xl font-bold text-ink-primary">{{ metriques.requetes_predict }}</p>
   </div>
-  <div class="bg-gray-800 rounded-lg p-6">
-    <h3 class="text-lg font-semibold text-gray-300 mb-2">Par code de reponse</h3>
+  <div class="bg-panel p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="label-caps text-ink-tertiary">Par code de reponse</h3>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round" class="text-accent">
+        <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
+      </svg>
+    </div>
     {% for statut, nombre in metriques.par_statut.items %}
-    <p class="text-gray-300">{{ statut }} : <span class="text-white font-semibold">{{ nombre }}</span></p>
+    <p class="num text-sm text-ink-secondary">{{ statut }} : <span class="text-ink-primary font-semibold">{{ nombre }}</span></p>
     {% empty %}
-    <p class="text-gray-500 text-sm">Pas encore de donnees</p>
+    <p class="text-ink-muted text-sm">Pas encore de donnees</p>
     {% endfor %}
   </div>
 </div>
-<p class="text-gray-500 text-sm">
-  Chiffres bruts recuperes depuis /metrics (Prometheus) sur le backend, page basique juste pour suivre
-  l'activite de l'API.
+<p class="label-caps text-ink-muted">
+  source: /metrics (prometheus) &middot; page basique pour suivre l'activite de l'api
 </p>
 {% else %}
-<p class="text-gray-400">Impossible de recuperer les metriques pour le moment.</p>
+<p class="text-ink-tertiary text-sm">Impossible de recuperer les metriques pour le moment.</p>
 {% endif %}
 {% endblock %}
