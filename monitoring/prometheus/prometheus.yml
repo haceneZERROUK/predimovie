@@ -1,0 +1,12 @@
+# Config minimale : Prometheus va lire /metrics sur le backend toutes les
+# 15s et garde l'historique, pour que Grafana puisse tracer des courbes
+# dans le temps (le backend expose deja /metrics via
+# prometheus-fastapi-instrumentator, il manquait juste quelqu'un pour
+# le scraper regulierement et le stocker).
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: predimovie-backend
+    static_configs:
+      - targets: ["backend:8000"]

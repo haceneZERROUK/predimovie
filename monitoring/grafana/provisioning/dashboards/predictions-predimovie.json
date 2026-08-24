@@ -1,0 +1,211 @@
+{
+  "uid": "predimovie-predictions",
+  "title": "Predictions - Predimovie",
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "5m",
+  "time": {
+    "from": "now-90d",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Predictions stockees",
+      "type": "stat",
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 0,
+        "y": 0
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "predimovie-postgres"
+      },
+      "targets": [
+        {
+          "rawSql": "SELECT COUNT(*) FROM prediction",
+          "format": "table",
+          "refId": "A",
+          "editorMode": "code",
+          "rawQuery": true,
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "predimovie-postgres"
+          }
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Films en base",
+      "type": "stat",
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 6,
+        "y": 0
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "predimovie-postgres"
+      },
+      "targets": [
+        {
+          "rawSql": "SELECT COUNT(*) FROM oeuvre",
+          "format": "table",
+          "refId": "A",
+          "editorMode": "code",
+          "rawQuery": true,
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "predimovie-postgres"
+          }
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Comptes cinema actifs",
+      "type": "stat",
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 12,
+        "y": 0
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "predimovie-postgres"
+      },
+      "targets": [
+        {
+          "rawSql": "SELECT COUNT(*) FROM compte WHERE role = 'CINEMA' AND statut_compte = true",
+          "format": "table",
+          "refId": "A",
+          "editorMode": "code",
+          "rawQuery": true,
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "predimovie-postgres"
+          }
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Ecart moyen absolu (predit - reel)",
+      "type": "stat",
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 18,
+        "y": 0
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "predimovie-postgres"
+      },
+      "targets": [
+        {
+          "rawSql": "SELECT ROUND(AVG(ABS(p.entrees_premiere_semaine_predites - o.entrees_premiere_semaine))) FROM prediction p JOIN oeuvre o ON o.id_oeuvre = p.id_oeuvre WHERE o.entrees_premiere_semaine IS NOT NULL",
+          "format": "table",
+          "refId": "A",
+          "editorMode": "code",
+          "rawQuery": true,
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "predimovie-postgres"
+          }
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Ecart predit/reel dans le temps",
+      "description": "Un point par prediction dont le film est sorti depuis (entrees reelles connues). Positif = on a surestime, negatif = sous-estime.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 9,
+        "w": 24,
+        "x": 0,
+        "y": 6
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "predimovie-postgres"
+      },
+      "targets": [
+        {
+          "rawSql": "SELECT p.date_prediction AS time, p.entrees_premiere_semaine_predites - o.entrees_premiere_semaine AS ecart, p.nom_francais FROM prediction p JOIN oeuvre o ON o.id_oeuvre = p.id_oeuvre WHERE o.entrees_premiere_semaine IS NOT NULL ORDER BY p.date_prediction",
+          "format": "time_series",
+          "refId": "A",
+          "editorMode": "code",
+          "rawQuery": true,
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "predimovie-postgres"
+          }
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Nouveaux comptes cinema dans le temps",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 15
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "predimovie-postgres"
+      },
+      "targets": [
+        {
+          "rawSql": "SELECT date_inscription AS time, COUNT(*) AS comptes FROM compte WHERE role = 'CINEMA' GROUP BY date_inscription ORDER BY date_inscription",
+          "format": "time_series",
+          "refId": "A",
+          "editorMode": "code",
+          "rawQuery": true,
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "predimovie-postgres"
+          }
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "title": "Dernieres predictions",
+      "type": "table",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 15
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "predimovie-postgres"
+      },
+      "targets": [
+        {
+          "rawSql": "SELECT p.date_prediction AS \"date\", p.nom_francais AS film, p.entrees_premiere_semaine_predites AS predit, o.entrees_premiere_semaine AS reel FROM prediction p JOIN oeuvre o ON o.id_oeuvre = p.id_oeuvre ORDER BY p.date_prediction DESC LIMIT 20",
+          "format": "table",
+          "refId": "A",
+          "editorMode": "code",
+          "rawQuery": true,
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "predimovie-postgres"
+          }
+        }
+      ]
+    }
+  ]
+}

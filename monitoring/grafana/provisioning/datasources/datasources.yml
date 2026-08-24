@@ -1,0 +1,32 @@
+# 2 sources de donnees pour Grafana :
+# - Prometheus, pour les metriques techniques de l'API (requetes, latence,
+#   erreurs) deja exposees sur /metrics.
+# - Postgres, en lecture directe sur la meme base que l'appli, pour des
+#   dashboards "metier" (ecart predit/reel, comptes, films en base) que
+#   Prometheus ne peut pas donner.
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    uid: predimovie-prometheus
+    isDefault: true
+
+  - name: Postgres
+    type: postgres
+    access: proxy
+    url: postgres:5432
+    database: ${POSTGRES_DB}
+    user: ${POSTGRES_USER}
+    uid: predimovie-postgres
+    jsonData:
+      # le plugin postgres recent lit la base a utiliser ici (jsonData.database),
+      # pas dans le champ "database" de premier niveau ci-dessus (garde pour la
+      # compat, mais ignore par le plugin pour cette histoire de "default database")
+      database: ${POSTGRES_DB}
+      sslmode: disable
+      postgresVersion: 1600
+    secureJsonData:
+      password: ${POSTGRES_PASSWORD}
