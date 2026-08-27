@@ -1,17 +1,27 @@
 {
+  "id": "UktRFJy9pIjPcuci",
   "name": "Predimovie - Scraping hebdo + mots-cles",
+  "active": false,
   "nodes": [
     {
       "parameters": {
         "rule": {
-          "interval": [{ "field": "weeks", "weeksInterval": 1 }]
+          "interval": [
+            {
+              "field": "weeks",
+              "weeksInterval": 1
+            }
+          ]
         }
       },
-      "id": "trigger-1",
+      "id": "trigger-scraping",
       "name": "Toutes les semaines",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
-      "position": [0, 0]
+      "position": [
+        1024,
+        208
+      ]
     },
     {
       "parameters": {
@@ -24,20 +34,29 @@
       "name": "Scraper films a venir",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [250, 0],
+      "position": [
+        1280,
+        208
+      ],
       "credentials": {
-        "httpHeaderAuth": { "name": "Predimovie Scraper API" }
+        "httpHeaderAuth": {
+          "id": "uuh2lnKtVyyYS44T",
+          "name": "Predimovie Scraper API"
+        }
       }
     },
     {
       "parameters": {
-        "jsCode": "// jpbox numerote les semaines depuis janvier 1970, ca avance de 1 par semaine\n// du coup on calcule le numero de la semaine en cours pour recuperer le bon classement\nconst epoque = new Date('1970-01-05T00:00:00Z');\nconst maintenant = new Date();\nconst nbSemaines = (maintenant - epoque) / (1000 * 60 * 60 * 24 * 7);\nconst idsem = Math.round(nbSemaines + 1.714);\nreturn { idsem };"
+        "jsCode": "// jpbox numerote les semaines depuis janvier 1970, ca avance de 1 par semaine\n// on veut la semaine QUI VIENT DE SE TERMINER (ses entrees sont publiees), pas\n// la semaine a venir (+1.714 donne cette semaine-la, JPBOX renvoie 'missing' dessus\n// tant qu'elle n'est pas terminee) - verifie en conditions reelles le 25/08/2026\nconst epoque = new Date('1970-01-05T00:00:00Z');\nconst maintenant = new Date();\nconst nbSemaines = (maintenant - epoque) / (1000 * 60 * 60 * 24 * 7);\nconst idsem = Math.round(nbSemaines + 1.714) - 1;\nreturn { idsem };"
       },
       "id": "code-idsem",
       "name": "Calculer la semaine",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [500, 0]
+      "position": [
+        1536,
+        208
+      ]
     },
     {
       "parameters": {
@@ -50,58 +69,77 @@
       "name": "Scraper entrees semaine",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [750, 0],
+      "position": [
+        1792,
+        208
+      ],
       "credentials": {
-        "httpHeaderAuth": { "name": "Predimovie Scraper API" }
+        "httpHeaderAuth": {
+          "id": "uuh2lnKtVyyYS44T",
+          "name": "Predimovie Scraper API"
+        }
       }
     },
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT id_oeuvre, synopsis FROM oeuvre WHERE synopsis IS NOT NULL AND length(synopsis) > 50 AND mot_cle_1 IS NULL;"
+        "query": "SELECT id_oeuvre, synopsis FROM oeuvre WHERE synopsis IS NOT NULL AND length(synopsis) > 50 AND mot_cle_1 IS NULL;",
+        "options": {}
       },
-      "id": "postgres-select",
+      "id": "380b2bc2-5648-406e-90df-9b98033ded7a",
       "name": "Recuperer synopsis",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [1000, 0],
+      "position": [
+        1536,
+        608
+      ],
       "credentials": {
-        "postgres": { "name": "Predimovie Postgres" }
+        "postgres": {
+          "id": "mnwvvZSGuwgkRwCl",
+          "name": "Postgres account"
+        }
       }
     },
     {
       "parameters": {
-        "model": "openai/gpt-oss-20b"
+        "options": {}
       },
-      "id": "groq-model",
-      "name": "Groq Chat Model",
-      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
-      "typeVersion": 1,
-      "position": [1250, 200],
-      "credentials": {
-        "groqApi": { "name": "Groq account" }
-      }
+      "id": "dd323731-bc17-40d5-8f5d-23a07657c36f",
+      "name": "Boucle un film a la fois",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1792,
+        608
+      ]
     },
     {
       "parameters": {
         "promptType": "define",
-        "text": "=Voici le synopsis d'un film :\n\n{{ $json.synopsis }}\n\nReponds uniquement avec exactement 3 mots-cles qui resument ce film, en francais, separes par des virgules. Pas de phrase, pas d'introduction, juste les 3 mots-cles."
+        "text": "=Voici le synopsis d'un film :\n\n{{ $json.synopsis }}\n\nReponds uniquement avec exactement 3 mots-cles qui resument ce film, en francais, separes par des virgules. Pas de phrase, pas d'introduction, juste les 3 mots-cles. juste un mot de 50 caractère maximum"
       },
-      "id": "llm-chain",
+      "id": "cd8fc1a4-df28-4964-93c8-afbe0002a0ca",
       "name": "Extraire mots-cles",
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.5,
-      "position": [1250, 0]
+      "position": [
+        2288,
+        720
+      ]
     },
     {
       "parameters": {
         "jsCode": "const motsCles = $input.item.json.text.split(',').map(m => m.trim()).slice(0, 3);\nreturn {\n  id_oeuvre: $('Recuperer synopsis').item.json.id_oeuvre,\n  mot_cle_1: motsCles[0] || null,\n  mot_cle_2: motsCles[1] || null,\n  mot_cle_3: motsCles[2] || null,\n};"
       },
-      "id": "code-decoupe",
+      "id": "f37d6993-fd9a-4d6a-a3da-2985b88da0e1",
       "name": "Decouper la reponse",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1500, 0]
+      "position": [
+        2544,
+        720
+      ]
     },
     {
       "parameters": {
@@ -111,42 +149,168 @@
           "queryReplacement": "={{ $json.mot_cle_1 }},{{ $json.mot_cle_2 }},{{ $json.mot_cle_3 }},{{ $json.id_oeuvre }}"
         }
       },
-      "id": "postgres-update",
+      "id": "99ba3f4c-9409-4060-817c-ce4913ffd334",
       "name": "Enregistrer les mots-cles",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [1750, 0],
+      "position": [
+        2784,
+        720
+      ],
       "credentials": {
-        "postgres": { "name": "Predimovie Postgres" }
+        "postgres": {
+          "id": "mnwvvZSGuwgkRwCl",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "=claude-haiku-4-5-20251001",
+        "options": {}
+      },
+      "id": "5d85a7f8-fb8d-41dc-a6dc-0e2770d90147",
+      "name": "Anthropic Chat Model1",
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1,
+      "position": [
+        2288,
+        912
+      ],
+      "credentials": {
+        "anthropicApi": {
+          "id": "VR8gMDBBwzqISolE",
+          "name": "Anthropic account 2"
+        }
       }
     }
   ],
   "connections": {
-    "Toutes les semaines": {
-      "main": [[{ "node": "Scraper films a venir", "type": "main", "index": 0 }]]
-    },
-    "Scraper films a venir": {
-      "main": [[{ "node": "Calculer la semaine", "type": "main", "index": 0 }]]
-    },
-    "Calculer la semaine": {
-      "main": [[{ "node": "Scraper entrees semaine", "type": "main", "index": 0 }]]
-    },
-    "Scraper entrees semaine": {
-      "main": [[{ "node": "Recuperer synopsis", "type": "main", "index": 0 }]]
-    },
     "Recuperer synopsis": {
-      "main": [[{ "node": "Extraire mots-cles", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Boucle un film a la fois",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
-    "Groq Chat Model": {
-      "ai_languageModel": [
-        [{ "node": "Extraire mots-cles", "type": "ai_languageModel", "index": 0 }]
+    "Boucle un film a la fois": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Extraire mots-cles",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Extraire mots-cles": {
-      "main": [[{ "node": "Decouper la reponse", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Decouper la reponse",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Decouper la reponse": {
-      "main": [[{ "node": "Enregistrer les mots-cles", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Enregistrer les mots-cles",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enregistrer les mots-cles": {
+      "main": [
+        [
+          {
+            "node": "Boucle un film a la fois",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Anthropic Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Extraire mots-cles",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scraper films a venir": {
+      "main": [
+        [
+          {
+            "node": "Calculer la semaine",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculer la semaine": {
+      "main": [
+        [
+          {
+            "node": "Scraper entrees semaine",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scraper entrees semaine": {
+      "main": [
+        [
+          {
+            "node": "Recuperer synopsis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Toutes les semaines": {
+      "main": [
+        [
+          {
+            "node": "Scraper films a venir",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "nodeGroups": [],
+  "pinData": {},
+  "activeVersionId": null,
+  "versionCounter": 47,
+  "sourceWorkflowId": null,
+  "versionMetadata": {
+    "name": null,
+    "description": null
   }
 }

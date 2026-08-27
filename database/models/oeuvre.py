@@ -56,6 +56,28 @@ class Oeuvre(Base):
     # distribution limitée) que JPBOX ne référence même pas.
     id_allocine: Mapped[int] = mapped_column(Integer, nullable=True, unique=True)
     id_tmdb: Mapped[int] = mapped_column(Integer, nullable=True)
+    # Langue originale du film, code ISO 639-1 (ex: "fr", "en"), tel que
+    # renvoye par TMDB (original_language). Sert a ponderer plus fort les
+    # succes francais pendant l'entrainement (cf ml/train.py) - les petits
+    # cinemas independants du projet misent surtout sur le cinema francais.
+    langue_originale: Mapped[str] = mapped_column(String(10), nullable=True)
+    # Budget du film (en dollars US), tel que renvoye par TMDB. Souvent a
+    # 0/NULL sur les petites productions (TMDB ne connait pas le chiffre,
+    # pas forcement un vrai budget nul) - a traiter comme donnee manquante.
+    budget: Mapped[int] = mapped_column(Integer, nullable=True)
+    # Nombre de salles lors de la premiere semaine d'exploitation (JPBOX,
+    # colonne "Salles" du tableau hebdomadaire par film). Sert a entrainer
+    # un sous-modele qui PREDIT ce nombre pour un film pas encore sorti
+    # (cf ml/salles.py) - la vraie valeur n'est connue qu'apres coup, donc
+    # jamais utilisable telle quelle pour predire un film a venir.
+    nb_salles_semaine1: Mapped[int] = mapped_column(Integer, nullable=True)
+    # Prediction du sous-modele "salles" (ml/salles.py), calculee une fois
+    # hors-ligne pour tous les films a partir de features connues avant la
+    # sortie (budget, genre, casting...). Contrairement a
+    # nb_salles_semaine1 (la vraie valeur, connue seulement apres coup),
+    # celle-ci EST utilisable pour predire un film pas encore sorti - c'est
+    # elle qui sert de feature au modele principal (ml/train.py).
+    nb_salles_predites: Mapped[float] = mapped_column(Float, nullable=True)
     id_nature: Mapped[int] = mapped_column(ForeignKey("nature.id_nature"), nullable=False)
 
     # Chaque relationship() ci-dessous correspond à une des tables

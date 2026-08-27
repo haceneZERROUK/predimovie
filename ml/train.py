@@ -99,7 +99,10 @@ def entrainer_un_modele(
     # entrainement sur la cible en log (les entrees c'est tres etale,
     # log1p rend la distribution plus proche d'une gaussienne). Le poids
     # (entrees brutes) dit au modele de se concentrer plus fort sur les
-    # gros films : se planter dessus coute plus cher pendant l'entrainement
+    # gros films : se planter dessus coute plus cher pendant l'entrainement.
+    # Teste sans en V6 (priorite aux petits/moyens films), remis tel quel
+    # ensuite : les petits cinemas independants programment aussi des
+    # blockbusters, il faut rester bon dessus.
     recherche.fit(X_train, np.log1p(y_train_log), sample_weight=poids_train)
 
     # on repasse en vraies entrees pour evaluer, plus parlant que le log
@@ -125,6 +128,40 @@ def entrainer_un_modele(
     )
 
     with mlflow.start_run(run_name=nom_modele):
+        # V5 : pourquoi ce reentrainement (visible dans l'UI mlflow, onglet
+        # "Tags", pour qu'on se souvienne du "pourquoi" en regardant les
+        # metriques plus tard)
+        mlflow.set_tag(
+            "motif_reentrainement",
+            "V6 : retire note_tmdb/note_imdb (data leak temporel : notes "
+            "ecrasees a la valeur ACTUELLE de TMDB/IMDb a chaque passage du "
+            "pipeline, donc murie post-sortie pour les donnees backfillees) ; "
+            "POIDS_LISSAGE 8->2 (encodage cible acteur/realisateur/production/"
+            "genre moins tire vers la moyenne globale) ; sample_weight = "
+            "entrees brutes, sans ponderation par categorie (essaye en V7, "
+            "gain mitige et un premier essai avec des multiplicateurs trop "
+            "agressifs avait fait s'effondrer le modele - abandonne, retour "
+            "a la version simple). Iteration precedente : ajoute nb_salles_predites, "
+            "sortie d'un sous-modele leger (ml/salles.py) qui predit le "
+            "nombre de salles en semaine 1 a partir du budget/genre/casting/"
+            "saisonnalite - le vrai nb_salles_semaine1 n'existe que "
+            "retrospectivement sur JPBOX, jamais disponible avant une sortie "
+            "reelle (verifie en conditions reelles). Cette iteration : ajoute "
+            "budget en feature directe (en plus de son usage dans le sous-modele "
+            "salles). Analyse ANOVA/Pearson sur les donnees brutes (avant tout "
+            "feature engineering) : budget a r=0.484 avec la cible, 2e correlation "
+            "la plus forte apres les fuites connues (note_tmdb/imdb, "
+            "nb_salles_semaine1) - signal fort jusque-la seulement filtre "
+            "indirectement via nb_salles_predites, jamais expose tel quel au "
+            "modele principal (gain reel quasi nul au final, deja capte par "
+            "nb_salles_predites). Ajoute aussi acteur_habitue et "
+            "realisateur_habitue (le film a-t-il un acteur/realisateur credite "
+            "dans >= 10 films du train ? cf SEUIL_HABITUE) - tres significatif "
+            "en ANOVA sur donnees brutes (acteur F=269.5 p=8.2e-60, "
+            "realisateur F=144.3 p=5.0e-33) mais potentiellement redondant "
+            "avec acteur_pop_max/realisateur_pop_max deja dans le modele "
+            "(meme signal, version binaire vs continue).",
+        )
         mlflow.log_param("modele", nom_modele)
         mlflow.log_params(recherche.best_params_)
         mlflow.log_metric("rmse", rmse)
@@ -168,7 +205,11 @@ def main():
     print(f"{len(X_train) + len(X_test)} films, {X_train.shape[1]} features")
 
     # poids = entrees brutes du train : un blockbuster pese beaucoup plus
-    # lourd dans la fonction de cout qu'un petit film
+    # lourd dans la fonction de cout qu'un petit film (V3). Le poids par
+    # categorie francais/gros-succes teste en V7 a ete abandonne : gain
+    # mitige, et le modele s'etait effondre au premier essai avec des
+    # multiplicateurs trop agressifs (cf mlflow, tag motif_reentrainement
+    # des runs V7) - on revient a la version simple, plus honnete.
     poids_train = y_train.to_numpy()
 
     resultats = []

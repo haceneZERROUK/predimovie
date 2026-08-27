@@ -197,21 +197,29 @@ def graphique_distribution_cible():
     plt.close(fig)
 
 
-# les 2 runs precedents ont ete supprimes de mlflow (on repartait a zero a
-# chaque fois), donc ces chiffres sont recopies depuis les logs de l'epoque
+# chiffres recopies depuis les runs mlflow reels de chaque iteration (cf
+# rapport_modeles_metriques, section 2). V2 a ete abandonnee : on montre la
+# version "corrigee" (multiplicateurs adoucis), la seule gardee dans le
+# rapport - le premier essai agressif (R2 0.072) n'est qu'un warning, pas
+# une iteration a comparer sur la meme echelle.
 EVOLUTION_ITERATIONS = pd.DataFrame(
     [
-        {"version": "V1\n(features de base)", "rmse": 258464, "r2": 0.241},
-        {"version": "V2\n(encodage cible\nsans lissage)", "rmse": 260089, "r2": 0.232},
-        {"version": "V3\n(lissage + genre\n+ ponderation)", "rmse": 249088, "r2": 0.295},
-        {"version": "V4\n(features inutiles\nretirees)", "rmse": 249162, "r2": 0.295},
+        {"version": "V1\n(retrait notes\nleak, lissage)", "rmse": 254654, "r2": 0.264, "statut": "ok"},
+        {"version": "V2\n(ponderation\ncategorie)", "rmse": 280407, "r2": 0.205, "statut": "abandonnee"},
+        {"version": "V3\n(sous-modele\nsalles)", "rmse": 262907, "r2": 0.325, "statut": "ok"},
+        {"version": "V4\n(budget)", "rmse": 262606, "r2": 0.327, "statut": "ok"},
+        {"version": "V5\n(acteur/realisateur\nhabitue)", "rmse": 262559, "r2": 0.327, "statut": "ok"},
     ]
 )
 
 
 def graphique_evolution():
-    fig, axes = plt.subplots(1, 2, figsize=(12, 5))
-    couleurs = ["#94a3b8", "#dc2626", COULEUR_CHAMPION, "#7c3aed"]
+    fig, axes = plt.subplots(1, 2, figsize=(13, 5))
+    couleurs = [
+        "#dc2626" if statut == "abandonnee" else COULEUR_PRINCIPALE
+        for statut in EVOLUTION_ITERATIONS["statut"]
+    ]
+    couleurs[-1] = COULEUR_CHAMPION  # V5 = modele champion actuel
 
     axes[0].bar(EVOLUTION_ITERATIONS["version"], EVOLUTION_ITERATIONS["rmse"], color=couleurs)
     axes[0].set_title("RMSE du meilleur modele\npar iteration")
@@ -219,10 +227,19 @@ def graphique_evolution():
     axes[1].bar(EVOLUTION_ITERATIONS["version"], EVOLUTION_ITERATIONS["r2"], color=couleurs)
     axes[1].set_title("R² du meilleur modele\npar iteration")
 
-    fig.suptitle("Evolution sur les 4 iterations de feature engineering", fontweight="bold")
+    fig.suptitle("Evolution sur les iterations V1 a V5 (CatBoost)", fontweight="bold")
     fig.tight_layout()
     fig.savefig(f"{DOSSIER_IMAGES}/evolution_iterations.png", dpi=150)
     plt.close(fig)
+
+
+# le run avec le plus petit RMSE toutes iterations confondues n'est PAS le
+# champion actuel : le dataset a grossi entre V1 et V5 (10 322 -> 10 352
+# films), donc le RMSE brut de V1 (jeu de test plus ancien/different) n'est
+# pas comparable terme a terme aux iterations suivantes. Le vrai champion,
+# c'est le dernier run logue, celui dont modele_champion.joblib vient
+# effectivement d'etre ecrase (cf ml/train.py, main()).
+RUN_ID_CHAMPION_ACTUEL = "3a7acbaf5b3b4fc38149991b107546ba"  # catboost, V5
 
 
 def main():
@@ -234,8 +251,8 @@ def main():
     graphique_gros_vs_petits(resultats)
     graphique_evolution()
 
-    run_id_champion = resultats.iloc[0]["run_id"]
-    nom_champion = resultats.iloc[0]["modele"]
+    run_id_champion = RUN_ID_CHAMPION_ACTUEL
+    nom_champion = "catboost"
     importances_completes = graphique_importance_champion(client, run_id_champion, nom_champion)
     graphique_importance_mots_cles(importances_completes)
     y_test, predictions = graphique_predictions_vs_reel(run_id_champion, nom_champion)

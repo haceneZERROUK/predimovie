@@ -15,8 +15,20 @@ from database.base import get_engine
 # on garde que les films dont on connait vraiment le resultat en salle
 # (les entrees a 0 c'est surtout des vieux films des annees 90 avec des
 # donnees jpbox pas fiables, cf audit de la base)
+#
+# note_tmdb/note_imdb retirees des features : data leak temporel. Ces notes
+# sont ecrasees a chaque passage du pipeline de scraping (cf
+# data_engineering/pipeline.py, _enrichir_oeuvre) avec la valeur ACTUELLE de
+# TMDB/IMDb, construite par le public qui a deja vu le film. Pour les
+# donnees d'entrainement recuperees via backfill (bien apres la sortie), on
+# apprenait donc au modele une note murie post-sortie pour predire un
+# resultat pre-sortie - une info qu'on n'aura jamais au moment de predire un
+# film pas encore sorti.
+# langue_originale n'est PAS une feature du modele (pas dans
+# colonnes_a_garder plus bas) : elle sert uniquement a calculer le
+# sample_weight par categorie a l'entrainement (cf ml/train.py)
 REQUETE_OEUVRES = """
-SELECT id_oeuvre, annee_sortie, note_tmdb, note_imdb,
+SELECT id_oeuvre, annee_sortie, langue_originale, nb_salles_predites, budget,
        mot_cle_1, mot_cle_2, mot_cle_3, entrees_premiere_semaine
 FROM oeuvre
 WHERE entrees_premiere_semaine IS NOT NULL
@@ -46,7 +58,7 @@ FROM production_oeuvre po JOIN production p ON p.id_production = po.id_productio
 # variantes "un seul film" pour la prediction : pas de filtre sur
 # entrees_premiere_semaine (justement, on ne la connait pas encore)
 REQUETE_OEUVRE_PAR_ID = """
-SELECT id_oeuvre, annee_sortie, note_tmdb, note_imdb, mot_cle_1, mot_cle_2, mot_cle_3
+SELECT id_oeuvre, annee_sortie, nb_salles_predites, budget, mot_cle_1, mot_cle_2, mot_cle_3
 FROM oeuvre WHERE id_oeuvre = %(id_oeuvre)s;
 """
 
@@ -86,10 +98,15 @@ def charger_donnees_brutes():
     realisateurs = pd.read_sql(REQUETE_REALISATEURS, engine)
     productions = pd.read_sql(REQUETE_PRODUCTIONS, engine)
 
+    # budget a 0/NULL = donnee manquante, pas un vrai budget nul (TMDB ne
+    # connait pas le chiffre sur les petites productions, cf commentaire
+    # database/models/oeuvre.py) - traite comme NaN avant l'imputation
+    oeuvres.loc[oeuvres["budget"] <= 0, "budget"] = np.nan
+
     # on garde les medianes utilisees : il en faudra pour imputer un futur
     # film tout neuf a l'inference, de la meme facon qu'ici
     medianes = {}
-    for colonne in ["annee_sortie", "note_tmdb", "note_imdb"]:
+    for colonne in ["annee_sortie", "nb_salles_predites", "budget"]:
         medianes[colonne] = oeuvres[colonne].median()
         oeuvres[colonne] = oeuvres[colonne].fillna(medianes[colonne])
 
@@ -100,7 +117,15 @@ def charger_donnees_brutes():
 # films dans le train, plus on tire sa valeur vers la moyenne globale plutot
 # que de faire confiance a son historique (souvent 1 seul film => sans ca,
 # l'encodage devient quasiment la vraie reponse de ce film, pas fiable)
-POIDS_LISSAGE = 8
+POIDS_LISSAGE = 2
+
+# seuil "habitue" : a partir de combien de films (dans le train) un acteur/
+# realisateur compte comme un habitue plutot qu'un one-shot. Justifie par
+# l'analyse ANOVA sur donnees brutes (annexe data science) : le film a-t-il
+# au moins un acteur/realisateur credite dans >= 10 films de la base ?
+# tres significatif dans les deux cas (acteur F=269.5 p=8.2e-60, realisateur
+# F=144.3 p=5.0e-33). Meme seuil pour les deux, pour rester comparable.
+SEUIL_HABITUE = 10
 
 
 def _stats_par_entite(
@@ -223,6 +248,13 @@ def construire_features(
             oeuvres_test, liaisons, colonne_nom, prefixe, stats, moyenne_cible_globale
         )
 
+    # "habitue" = version binaire de pop_max (deja calcule sur le train
+    # uniquement juste au-dessus, donc pas de fuite) : le film a-t-il au
+    # moins un acteur/realisateur credite dans >= SEUIL_HABITUE films ?
+    for df in (oeuvres_train, oeuvres_test):
+        df["acteur_habitue"] = (df["acteur_pop_max"] >= SEUIL_HABITUE).astype(int)
+        df["realisateur_habitue"] = (df["realisateur_pop_max"] >= SEUIL_HABITUE).astype(int)
+
     # mots-cles : le vectoriseur tf-idf apprend son vocabulaire sur le train
     # uniquement, puis on l'applique tel quel au test (fit sur train, transform partout)
     # max_features baisse de 150 a 75 : sur le modele precedent, 78 des 150
@@ -247,15 +279,17 @@ def construire_features(
     )
 
     colonnes_a_garder = (
-        ["annee_sortie", "note_tmdb", "note_imdb", "nb_genres"]
+        ["annee_sortie", "nb_salles_predites", "budget", "nb_genres"]
         + colonnes_genre
         + [
             "acteur_nb",
             "acteur_pop_max",
             "acteur_encodage_cible",
+            "acteur_habitue",
             "realisateur_nb",
             "realisateur_pop_max",
             "realisateur_encodage_cible",
+            "realisateur_habitue",
             "production_nb",
             "production_pop_max",
             "production_encodage_cible",
@@ -280,6 +314,10 @@ def construire_features(
         "vectoriseur_motcle": vectoriseur,
         "colonnes_finales": list(X_train.columns),
     }
+
+    # langue_originale du train, alignee sur l'index de X_train : pas une
+    # feature du modele, juste pour calculer le sample_weight (ml/train.py)
+    artefacts["langue_originale_train"] = oeuvres_train["langue_originale"]
 
     return X_train, X_test, y_train, y_test, artefacts
 
@@ -310,6 +348,9 @@ def construire_features_pour_predire(id_oeuvre: int, artefacts: dict) -> pd.Data
     if oeuvre.empty:
         raise ValueError(f"aucun film avec id_oeuvre={id_oeuvre}")
 
+    # budget a 0/NULL = donnee manquante (cf charger_donnees_brutes)
+    oeuvre.loc[oeuvre["budget"] <= 0, "budget"] = np.nan
+
     for colonne, mediane in artefacts["medianes"].items():
         oeuvre[colonne] = oeuvre[colonne].fillna(mediane).astype(float)
 
@@ -334,6 +375,9 @@ def construire_features_pour_predire(id_oeuvre: int, artefacts: dict) -> pd.Data
             artefacts[cle_stats],
             artefacts["moyenne_cible_globale"],
         )
+
+    oeuvre["acteur_habitue"] = (oeuvre["acteur_pop_max"] >= SEUIL_HABITUE).astype(int)
+    oeuvre["realisateur_habitue"] = (oeuvre["realisateur_pop_max"] >= SEUIL_HABITUE).astype(int)
 
     oeuvre["mots_cles_texte"] = (
         oeuvre["mot_cle_1"].fillna("")

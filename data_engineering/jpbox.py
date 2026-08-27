@@ -101,6 +101,34 @@ def extraire_classement(html: str) -> list[dict]:
     return films
 
 
+def nb_salles_premiere_semaine(id_jpbox: int) -> int | None:
+    """Recupere le nombre de salles lors de la premiere semaine
+    d'exploitation d'un film, via l'onglet "Resultats France" de sa fiche
+    (view=2). Cette donnee n'existe que RETROSPECTIVEMENT (mesuree en meme
+    temps que les entrees de la semaine, jamais annoncee avant la sortie -
+    verifie en conditions reelles) : sert uniquement a construire le jeu
+    d'entrainement d'un sous-modele qui, lui, pourra etre utilise en amont
+    d'une vraie sortie (cf ml/salles.py)."""
+    url = f"{JPBOX_BASE_URL}/fichfilm.php?id={id_jpbox}&view=2"
+    html = _telecharger_page(url)
+    return extraire_nb_salles_semaine1(html)
+
+
+def extraire_nb_salles_semaine1(html: str) -> int | None:
+    """Parse le HTML de l'onglet "Resultats France" d'une fiche film.
+    Separe de nb_salles_premiere_semaine() pour pouvoir etre teste sans reseau."""
+    soup = BeautifulSoup(html, "lxml")
+    for table in soup.find_all("table", class_="tablesmall5"):
+        lignes = table.find_all("tr")
+        if len(lignes) < 2:
+            continue
+        cellules = lignes[1].find_all("td")  # premiere ligne de donnees = semaine 1
+        if len(cellules) < 6:
+            continue
+        return _texte_vers_nombre(cellules[5].get_text())
+    return None
+
+
 def _lire_lien_calendrier(lien) -> dict:
     """Lit un lien vers une fiche film sur la page calendrier (titre +
     annee sont dans le texte du lien, pas besoin d'aller sur la fiche).
