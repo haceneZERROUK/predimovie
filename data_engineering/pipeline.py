@@ -116,6 +116,11 @@ def enrichir_avec_tmdb(titre: str, annee: int | None) -> dict | None:
         "date_sortie": date_sortie_tmdb,
         "synopsis": details.get("overview"),
         "note_tmdb": details.get("vote_average"),
+        "langue_originale": details.get("original_language"),
+        # budget en dollars US. TMDB renvoie souvent 0 quand il ne connait
+        # pas le chiffre (surtout sur les petites productions) : on stocke
+        # None plutot que 0 pour ne pas confondre "inconnu" et "vrai 0"
+        "budget": details.get("budget") or None,
         "genres": [g["name"] for g in details.get("genres", [])],
         "productions": [p["name"] for p in details.get("production_companies", [])],
         # on ne garde que les 10 premiers acteurs, pas tout le casting
@@ -177,6 +182,7 @@ def _enrichir_oeuvre(
         oeuvre.id_tmdb = infos_tmdb["id_tmdb"]
         oeuvre.synopsis = infos_tmdb["synopsis"]
         oeuvre.note_tmdb = infos_tmdb["note_tmdb"]
+        oeuvre.langue_originale = infos_tmdb["langue_originale"]
         if oeuvre.annee_sortie is None:
             oeuvre.annee_sortie = infos_tmdb["annee_sortie"]
         if oeuvre.date_sortie is None:
@@ -340,6 +346,12 @@ def traiter_entrees_semaine(
             notes_imdb=notes_imdb,
         )
         oeuvre.entrees_premiere_semaine = film["entrees_semaine"]
+        # nombre de salles de la premiere semaine : meme source (fiche
+        # film, onglet "Resultats France") que le backfill historique, pour
+        # rester coherent. 1 requete de plus par film, negligeable au
+        # rythme hebdomadaire (quelques dizaines de films).
+        if film["id_jpbox"] is not None:
+            oeuvre.nb_salles_semaine1 = jpbox.nb_salles_premiere_semaine(film["id_jpbox"])
         nb_maj += 1
 
     session.commit()

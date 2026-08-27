@@ -55,9 +55,10 @@ def relancer_predictions(token: str) -> dict:
     return reponse.json()
 
 
-def historique_predictions(token: str) -> list[dict]:
+def historique_predictions(token: str, semaine: str | None = None) -> dict:
     reponse = httpx.get(
         f"{settings.BACKEND_API_URL}/predictions/historique",
+        params={"semaine": semaine} if semaine else None,
         headers={"Authorization": f"Bearer {token}"},
         timeout=10,
     )

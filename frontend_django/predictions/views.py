@@ -74,7 +74,11 @@ def _prochain_mercredi():
 @connexion_requise
 def top10_view(request):
     token = request.session["token"]
-    contexte = {"prochain_mercredi": _prochain_mercredi()}
+    # valeur de secours si l'API ne renvoie rien du tout (aucun film en
+    # attente de resultats nulle part en base) : la fenetre mercredi-samedi
+    # a venir, meme si elle est vide - au moins un affichage coherent
+    mercredi = _prochain_mercredi()
+    contexte = {"date_debut": mercredi, "date_fin": mercredi + timedelta(days=3)}
     try:
         films = films_a_venir(token)
     except ErreurAPI as erreur:
@@ -100,8 +104,9 @@ def top10_view(request):
         resultat["synopsis"] = film.get("synopsis")
         predictions.append(resultat)
 
-    # /films-a-venir ne renvoie deja que les films du mercredi a venir (pas
-    # tout ce qui sort dans les mois qui viennent), pas besoin de couper a 10
+    # /films-a-venir ne renvoie deja que les films du mercredi-vendredi a
+    # venir (pas tout ce qui sort dans les mois qui viennent), pas besoin
+    # de couper a 10
     predictions.sort(key=lambda p: p["entrees_premiere_semaine_predites"], reverse=True)
 
     # part des entrees predites par rapport au premier du classement, pour
@@ -116,18 +121,65 @@ def top10_view(request):
             else 0
         )
 
+    # la date affichee en haut de page doit refleter la VRAIE semaine des
+    # films renvoyes par l'API, pas un recalcul independant du "prochain
+    # mercredi" cote frontend : /films-a-venir peut retomber sur la semaine
+    # precedente si le pipeline n8n n'a pas encore rattrape la semaine en
+    # cours (cf backend/films.py). On affiche toujours la fenetre complete
+    # mercredi->samedi (4 jours fixes, meme si tous les films sortent le
+    # meme jour) plutot que le min/max exact des films, ancree sur le
+    # mercredi de LEUR semaine (pas forcement celle d'aujourd'hui) - le
+    # changement de date en haut de page suit donc automatiquement le
+    # passage du pipeline n8n (le lundi), pas un calcul de calendrier fige.
+    dates_films = [p["date_sortie"] for p in predictions if p["date_sortie"]]
+    if dates_films:
+        premiere_date = min(dates_films)
+        mercredi_de_la_semaine = premiere_date - timedelta(days=(premiere_date.weekday() - 2) % 7)
+        contexte = {
+            "date_debut": mercredi_de_la_semaine,
+            "date_fin": mercredi_de_la_semaine + timedelta(days=3),
+        }
+
     return render(request, "predictions/top10.html", {**contexte, "predictions": predictions})
+
+
+def _gravite_ecart(ecart, reel):
+    """Classe l'erreur de prediction par son AMPLEUR (valeur absolue par
+    rapport au reel), pas par son signe : sous-estimer de 500k est aussi
+    grave que sur-estimer de 500k, ca n'a rien a voir avec rouge=mauvais/
+    jaune=bon comme avant."""
+    if ecart is None or not reel:
+        return "text-ink-tertiary"
+    pct = abs(ecart) / reel
+    if pct < 0.2:
+        return "text-green-400"
+    if pct < 0.5:
+        return "text-yellow-400"
+    return "text-red-400"
 
 
 @admin_requis
 def historique_view(request):
     token = request.session["token"]
+    semaine_choisie = request.GET.get("semaine") or ""
     try:
-        historique = historique_predictions(token)
+        resultat = historique_predictions(token, semaine=semaine_choisie or None)
     except ErreurAPI as erreur:
         messages.error(request, str(erreur))
-        historique = []
-    return render(request, "predictions/historique.html", {"historique": historique})
+        resultat = {"predictions": [], "semaines_disponibles": []}
+    for ligne in resultat["predictions"]:
+        ligne["gravite"] = _gravite_ecart(
+            ligne["ecart"], ligne["entrees_premiere_semaine_reelles"]
+        )
+    contexte = {
+        "historique": resultat["predictions"],
+        # l'API renvoie des dates ISO en texte brut (ex: "2026-08-13") : on
+        # les reparse en vraies dates pour que |date fonctionne au template
+        # (meme raison que date_sortie dans top10_view ci-dessus)
+        "semaines_disponibles": [date.fromisoformat(s) for s in resultat["semaines_disponibles"]],
+        "semaine_choisie": semaine_choisie,
+    }
+    return render(request, "predictions/historique.html", contexte)
 
 
 @admin_requis

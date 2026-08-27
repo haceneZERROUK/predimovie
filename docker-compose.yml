@@ -77,6 +77,13 @@ services:
       postgres:
         condition: service_healthy
 
+  streamlit:
+    build:
+      context: .
+      dockerfile: ./veille/Dockerfile
+    ports:
+      - "8501:8501"
+
   n8n:
     image: n8nio/n8n:latest
     ports:

@@ -2,7 +2,11 @@
 # (fixtures/) pour ne pas dépendre du réseau ni du site en direct.
 from pathlib import Path
 
-from data_engineering.jpbox import extraire_classement, extraire_films_du_calendrier
+from data_engineering.jpbox import (
+    extraire_classement,
+    extraire_films_du_calendrier,
+    extraire_nb_salles_semaine1,
+)
 
 DOSSIER_FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -49,3 +53,18 @@ def test_extraire_films_du_calendrier_pas_de_doublons():
 
     ids = [film["id_jpbox"] for film in films]
     assert len(ids) == len(set(ids))
+
+
+def test_extraire_nb_salles_semaine1_renvoie_la_premiere_ligne():
+    """La fiche film liste une ligne par semaine ecoulee : on ne veut que
+    la toute premiere (semaine 1), pas une semaine plus tardive."""
+    html = _lire_fixture("jpbox_fiche_film_semaines.html")
+    nb_salles = extraire_nb_salles_semaine1(html)
+
+    assert nb_salles == 472
+
+
+def test_extraire_nb_salles_semaine1_renvoie_none_si_pas_de_tableau():
+    """Un film pas encore sorti n'a pas de tableau de semaines du tout :
+    le parseur ne doit pas planter, juste renvoyer None."""
+    assert extraire_nb_salles_semaine1("<html><body>rien ici</body></html>") is None

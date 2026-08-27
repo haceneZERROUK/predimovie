@@ -6,13 +6,29 @@
 </div>
 <h1 class="text-xl font-bold text-ink-primary mb-2">Historique des predictions</h1>
 <p class="text-ink-tertiary text-sm mb-6">
-  Films pour lesquels une prediction a ete stockee ET qui sont maintenant sortis (entrees reelles connues).
+  Tous les films sortis, classes par vraies entrees (top de la semaine). La prediction n'est affichee que si
+  le modele a tourne sur ce film avant sa sortie.
+  {% if not semaine_choisie %}Les 4 dernieres semaines par defaut, ou choisis une semaine precise ci-dessous.{% endif %}
 </p>
+
+<form method="get" class="mb-6">
+  <label class="label-caps text-ink-tertiary block mb-1" for="semaine">Semaine de sortie</label>
+  <select name="semaine" id="semaine" onchange="this.form.submit()"
+    class="bg-panel border border-hair text-ink-primary text-sm px-3 py-2 min-w-64">
+    <option value="" {% if not semaine_choisie %}selected{% endif %}>4 dernieres semaines</option>
+    {% for s in semaines_disponibles %}
+    <option value="{{ s|date:'Y-m-d' }}" {% if semaine_choisie == s|date:'Y-m-d' %}selected{% endif %}>
+      Semaine du {{ s|date:"d/m/Y" }}
+    </option>
+    {% endfor %}
+  </select>
+</form>
 
 {% if historique %}
 <table class="w-full border-collapse">
   <thead>
     <tr class="label-caps text-ink-tertiary">
+      <th class="text-left py-2 px-2 border-b border-hair font-medium">rang</th>
       <th class="text-left py-2 px-2 border-b border-hair font-medium">titre</th>
       <th class="text-right py-2 px-2 border-b border-hair font-medium">predit</th>
       <th class="text-right py-2 px-2 border-b border-hair font-medium">reel</th>
@@ -23,20 +39,21 @@
   <tbody class="text-sm">
     {% for ligne in historique %}
     <tr>
+      <td class="num py-3 px-2 border-b border-hair2 text-accent">{{ forloop.counter|stringformat:"02d" }}</td>
       <td class="py-3 px-2 border-b border-hair2 text-ink-primary">{{ ligne.nom_francais }}</td>
-      <td class="num py-3 px-2 border-b border-hair2 text-right text-ink-secondary">{{ ligne.entrees_premiere_semaine_predites }}</td>
+      <td class="num py-3 px-2 border-b border-hair2 text-right text-ink-secondary">{{ ligne.entrees_premiere_semaine_predites|default_if_none:"—" }}</td>
       <td class="num py-3 px-2 border-b border-hair2 text-right text-ink-secondary">{{ ligne.entrees_premiere_semaine_reelles }}</td>
-      <td class="num py-3 px-2 border-b border-hair2 text-right {% if ligne.ecart < 0 %}text-red-400{% else %}text-yellow-400{% endif %}">
-        {{ ligne.ecart }}
+      <td class="num py-3 px-2 border-b border-hair2 text-right {{ ligne.gravite }}">
+        {{ ligne.ecart|default_if_none:"—" }}
       </td>
-      <td class="num py-3 px-2 border-b border-hair2 text-right text-ink-tertiary text-xs">{{ ligne.date_prediction }}</td>
+      <td class="num py-3 px-2 border-b border-hair2 text-right text-ink-tertiary text-xs">{{ ligne.date_prediction|default_if_none:"—" }}</td>
     </tr>
     {% endfor %}
   </tbody>
 </table>
 {% else %}
 <p class="text-ink-tertiary text-sm">
-  Aucun historique pour l'instant (aucun film predit n'est encore sorti, ou aucune prediction stockee).
+  Aucun film sorti sur cette periode (donnees pas encore scrapees, ou aucune sortie sur ces semaines).
 </p>
 {% endif %}
 {% endblock %}
