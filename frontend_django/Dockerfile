@@ -7,6 +7,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
+# regroupe les statiques (logos, image de fond) dans staticfiles/, servi
+# ensuite par WhiteNoise - fait au build, pas besoin de DB pour ca
+RUN python manage.py collectstatic --noinput
+
 EXPOSE 8000
 
 # migrate cree la petite base sqlite locale de Django (sessions, admin),
