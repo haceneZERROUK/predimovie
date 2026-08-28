@@ -82,7 +82,14 @@ def charger_donnees():
     return oeuvres, genres
 
 
-COLONNES_NUMERIQUES = ["annee_sortie", "mois_sortie", "budget", "acteur_nb", "realisateur_nb", "production_nb"]
+COLONNES_NUMERIQUES = [
+    "annee_sortie",
+    "mois_sortie",
+    "budget",
+    "acteur_nb",
+    "realisateur_nb",
+    "production_nb",
+]
 
 
 def entrainer_et_predire_pour_tous():
@@ -107,9 +114,7 @@ def entrainer_et_predire_pour_tous():
 
     print(f"{len(X_entrainement)} films avec nb_salles connu, {len(colonnes_finales)} features")
 
-    modele = XGBRegressor(
-        n_estimators=200, max_depth=4, learning_rate=0.05, random_state=42
-    )
+    modele = XGBRegressor(n_estimators=200, max_depth=4, learning_rate=0.05, random_state=42)
     modele.fit(X_entrainement, y_entrainement)
 
     predictions_log = modele.predict(X)

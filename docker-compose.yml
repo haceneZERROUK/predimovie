@@ -42,6 +42,7 @@ services:
       DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       MLFLOW_TRACKING_URI: http://mlflow:5000
       JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      TRAIN_API_KEY: ${TRAIN_API_KEY}
     ports:
       - "${BACKEND_PORT:-8000}:8000"
     depends_on:

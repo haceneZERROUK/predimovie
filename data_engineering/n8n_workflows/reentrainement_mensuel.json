@@ -1,0 +1,80 @@
+{
+  "id": "ReentrainementMensuel1",
+  "name": "Predimovie - Reentrainement mensuel du modele",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "months",
+              "monthsInterval": 1
+            }
+          ]
+        }
+      },
+      "id": "trigger-reentrainement",
+      "name": "Tous les mois",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        1024,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://backend:8000/admin/reentrainer-modele",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 5000
+        }
+      },
+      "id": "http-reentrainement",
+      "name": "Lancer le reentrainement",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1280,
+        208
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "predimovie-train-api-key",
+          "name": "Predimovie Train API"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Tous les mois": {
+      "main": [
+        [
+          {
+            "node": "Lancer le reentrainement",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "nodeGroups": [],
+  "pinData": {},
+  "activeVersionId": null,
+  "versionCounter": 1,
+  "sourceWorkflowId": null,
+  "versionMetadata": {
+    "name": null,
+    "description": "Cron mensuel -> POST /admin/reentrainer-modele (X-Api-Key = TRAIN_API_KEY) sur le backend. La route repond tout de suite (entrainement lance en arriere-plan, timeout HTTP volontairement court a 5s) : le RandomizedSearchCV prend 25-40 min. Le nouveau modele ne remplace modele_champion.joblib que si le garde-fou de ml/train.py (doit_remplacer_champion) accepte le RMSE obtenu. Credential httpHeaderAuth a creer dans n8n : header 'X-Api-Key', valeur = TRAIN_API_KEY (.env)."
+  }
+}

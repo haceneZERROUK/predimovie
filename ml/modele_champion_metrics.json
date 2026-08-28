@@ -1,0 +1,7 @@
+{
+  "nom_modele": "catboost",
+  "rmse": 262559,
+  "mae": 137343,
+  "r2": 0.327,
+  "run_id": null
+}

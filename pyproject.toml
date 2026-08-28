@@ -40,6 +40,11 @@ dev = [
     "python-semantic-release>=9.8",
     "pytest-django>=4.14.0",
 ]
+# a part du reste : seule veille/ en a besoin (scraping du blog de veille
+# hebdomadaire), pas la peine d'alourdir les images backend/frontend/scraper
+veille = [
+    "playwright>=1.47",
+]
 
 [build-system]
 requires = ["hatchling"]
@@ -67,7 +72,7 @@ target-version = ["py311"]
 extend-exclude = "(frontend_django/.*/migrations|database/alembic/versions)"
 
 [tool.pytest.ini_options]
-testpaths = ["backend/tests", "database/tests", "data_engineering/tests", "ml/tests", "frontend_django/predictions"]
+testpaths = ["backend/tests", "database/tests", "data_engineering/tests", "ml/tests", "veille/tests", "frontend_django/predictions"]
 DJANGO_SETTINGS_MODULE = "predimovie_web.settings"
 pythonpath = ["frontend_django"]
 

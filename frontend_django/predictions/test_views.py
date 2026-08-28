@@ -279,7 +279,7 @@ def test_historique_refuse_un_compte_cinema(client):
 @pytest.mark.django_db
 def test_historique_accessible_pour_admin(client, monkeypatch):
     _connecte_admin(client)
-    faux_historique = [
+    faux_predictions = [
         {
             "nom_francais": "Film Test",
             "entrees_premiere_semaine_predites": 900,
@@ -288,10 +288,13 @@ def test_historique_accessible_pour_admin(client, monkeypatch):
             "ecart": -100,
         }
     ]
-    monkeypatch.setattr("predictions.views.historique_predictions", lambda token: faux_historique)
+    faux_resultat = {"predictions": faux_predictions, "semaines_disponibles": ["2026-08-13"]}
+    monkeypatch.setattr(
+        "predictions.views.historique_predictions", lambda token, semaine=None: faux_resultat
+    )
     reponse = client.get(reverse("predictions:historique"))
     assert reponse.status_code == 200
-    assert reponse.context["historique"] == faux_historique
+    assert reponse.context["historique"] == faux_predictions
 
 
 @pytest.mark.django_db
