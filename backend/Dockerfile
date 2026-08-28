@@ -12,4 +12,6 @@ RUN pip install --no-cache-dir .
 
 EXPOSE 8000
 
-CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# $PORT (assigne dynamiquement par Railway, healthcheck cible ce port-la)
+# avec 8000 par defaut pour docker-compose en local, ou PORT n'est pas defini
+CMD ["sh", "-c", "uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
