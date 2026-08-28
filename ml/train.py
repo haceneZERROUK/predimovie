@@ -17,8 +17,6 @@ from xgboost import XGBRegressor
 
 from ml.data import charger_dataset_train_test
 
-mlflow.set_experiment("predimovie-entrees-premiere-semaine")
-
 CV = 5
 N_ITER_RANDOM_SEARCH = 40
 
@@ -225,6 +223,12 @@ def entrainer_un_modele(
 
 
 def main():
+    # deplace ici (pas au niveau module) : sinon le simple fait d'importer
+    # ml.train (ex: backend au demarrage, via reentrainement.py) initialise
+    # mlflow et cree ses tables - trop lent, ca a fait echouer le healthcheck
+    # Railway du backend au demarrage (5 min de timeout largement depasses)
+    mlflow.set_experiment("predimovie-entrees-premiere-semaine")
+
     print("chargement des donnees depuis postgres...")
     X_train, X_test, y_train, y_test, artefacts = charger_dataset_train_test()
     print(f"{len(X_train) + len(X_test)} films, {X_train.shape[1]} features")

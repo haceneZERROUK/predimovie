@@ -183,6 +183,31 @@
           "name": "Anthropic account 2"
         }
       }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://backend:8000/admin/predictions/relancer",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 5000
+        }
+      },
+      "id": "http-relancer-predictions",
+      "name": "Relancer les predictions",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2040,
+        400
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "predimovie-prediction-api-key",
+          "name": "Predimovie Prediction API"
+        }
+      }
     }
   ],
   "connections": {
@@ -199,7 +224,13 @@
     },
     "Boucle un film a la fois": {
       "main": [
-        [],
+        [
+          {
+            "node": "Relancer les predictions",
+            "type": "main",
+            "index": 0
+          }
+        ],
         [
           {
             "node": "Extraire mots-cles",
@@ -311,6 +342,6 @@
   "sourceWorkflowId": null,
   "versionMetadata": {
     "name": null,
-    "description": null
+    "description": "Une fois la boucle de mots-cles terminee sur tous les films a venir, appelle POST /admin/predictions/relancer sur le backend (X-Api-Key = PREDICTION_API_KEY) pour recalculer une prediction fraiche sur chaque film pas encore sorti. Credential httpHeaderAuth a creer dans n8n : header 'X-Api-Key', valeur = PREDICTION_API_KEY (.env)."
   }
 }

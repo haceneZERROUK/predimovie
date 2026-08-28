@@ -49,3 +49,6 @@ monitoring/grafana/data/
 
 # Comptes-rendus de travail (notes locales, pas destinées au dépôt)
 explication/
+
+# Supabase CLI (etat local, contient la pooler-url du projet lie)
+supabase/.temp/

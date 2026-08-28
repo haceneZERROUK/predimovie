@@ -15,3 +15,7 @@ CHEMIN_ARTEFACTS = os.environ.get("CHEMIN_ARTEFACTS", "ml/artefacts_features.job
 # cle partagee avec N8n pour declencher /admin/reentrainer-modele chaque
 # mois - meme principe que SCRAPER_API_KEY dans data_engineering/config.py
 TRAIN_API_KEY = os.environ.get("TRAIN_API_KEY", "")
+
+# cle partagee avec N8n pour declencher /admin/predictions/relancer chaque
+# semaine (meme principe, cle dediee pour ne pas reutiliser TRAIN_API_KEY)
+PREDICTION_API_KEY = os.environ.get("PREDICTION_API_KEY", "")

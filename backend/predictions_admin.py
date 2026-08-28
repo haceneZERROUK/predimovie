@@ -3,9 +3,10 @@
 # une fois que ces films sont sortis pour de vrai.
 from datetime import UTC, date, datetime, timedelta
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Header, HTTPException
 
 from backend.auth import utilisateur_admin
+from backend.config import PREDICTION_API_KEY
 from backend.moteur_prediction import predire
 from backend.schemas import HistoriquePrediction, HistoriqueReponse, RelanceReponse
 from database.base import SessionLocal
@@ -14,8 +15,12 @@ from database.models import Oeuvre, Prediction
 router = APIRouter()
 
 
-@router.post("/predictions/relancer", response_model=RelanceReponse)
-def relancer_predictions(_utilisateur: dict = Depends(utilisateur_admin)):
+def verifier_cle_api(x_api_key: str = Header(default="")):
+    if x_api_key != PREDICTION_API_KEY:
+        raise HTTPException(status_code=401, detail="Clé API invalide")
+
+
+def _relancer_predictions() -> int:
     session = SessionLocal()
     try:
         films = session.query(Oeuvre).filter(Oeuvre.entrees_premiere_semaine.is_(None)).all()
@@ -38,9 +43,26 @@ def relancer_predictions(_utilisateur: dict = Depends(utilisateur_admin)):
             )
             nombre += 1
         session.commit()
-        return RelanceReponse(nombre_predictions=nombre)
+        return nombre
     finally:
         session.close()
+
+
+@router.post("/predictions/relancer", response_model=RelanceReponse)
+def relancer_predictions(_utilisateur: dict = Depends(utilisateur_admin)):
+    return RelanceReponse(nombre_predictions=_relancer_predictions())
+
+
+@router.post(
+    "/admin/predictions/relancer",
+    response_model=RelanceReponse,
+    dependencies=[Depends(verifier_cle_api)],
+)
+def relancer_predictions_auto():
+    """Meme action que /predictions/relancer, mais appelable par N8n (cle API
+    au lieu d'un JWT admin) - declenchee chaque semaine juste apres le
+    scraping des films a venir et l'extraction des mots-cles."""
+    return RelanceReponse(nombre_predictions=_relancer_predictions())
 
 
 @router.get("/predictions/historique", response_model=HistoriqueReponse)
