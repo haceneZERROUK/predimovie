@@ -212,7 +212,9 @@ def test_films_a_venir_exclut_un_film_qui_sort_plus_tard_si_fenetre_normale_non_
     assert film_dans_2_mois.id_oeuvre not in ids
 
 
-def test_films_a_venir_fallback_sur_semaine_precedente_si_fenetre_vide(film_deja_sorti_sans_entrees):
+def test_films_a_venir_fallback_sur_semaine_precedente_si_fenetre_vide(
+    film_deja_sorti_sans_entrees,
+):
     """Si personne ne sort dans la fenetre mercredi-samedi a venir (le
     scraping n8n n'a pas encore rattrape la semaine), pas de page vide : on
     retombe sur la semaine precedente la plus recente qui a encore des films
@@ -263,7 +265,9 @@ def test_films_a_venir_inclut_le_samedi(film_samedi):
     assert film_samedi.id_oeuvre in ids
 
 
-def test_films_a_venir_exclut_le_dimanche_si_fenetre_normale_non_vide(film_pas_sorti, film_dimanche):
+def test_films_a_venir_exclut_le_dimanche_si_fenetre_normale_non_vide(
+    film_pas_sorti, film_dimanche
+):
     """Le dimanche n'est deja plus dans la fenetre mercredi-samedi - tant
     que cette fenetre a par ailleurs des films (sinon le fallback pourrait
     legitimement remonter le dimanche comme faisant partie de la semaine

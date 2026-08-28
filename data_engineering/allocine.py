@@ -1,7 +1,9 @@
 """
-Scraper pour https://www.allocine.fr : sert a completer la liste des sorties de la semaine de JPBOX (jpbox.py), 
-qui ne suit que les grosses sorties avec un vrai suivi box-office. AlloCiné liste TOUS les films qui
-sortent en salle, y compris les petites sorties arthouse/distribution limitee que JPBOX ne reference meme pas."""
+Scraper pour https://www.allocine.fr : sert a completer la liste des sorties de la
+semaine de JPBOX (jpbox.py), qui ne suit que les grosses sorties avec un vrai suivi
+box-office. AlloCiné liste TOUS les films qui sortent en salle, y compris les petites
+sorties arthouse/distribution limitee que JPBOX ne reference meme pas.
+"""
 
 import re
 import time

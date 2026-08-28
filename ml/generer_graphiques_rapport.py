@@ -204,11 +204,26 @@ def graphique_distribution_cible():
 # une iteration a comparer sur la meme echelle.
 EVOLUTION_ITERATIONS = pd.DataFrame(
     [
-        {"version": "V1\n(retrait notes\nleak, lissage)", "rmse": 254654, "r2": 0.264, "statut": "ok"},
-        {"version": "V2\n(ponderation\ncategorie)", "rmse": 280407, "r2": 0.205, "statut": "abandonnee"},
+        {
+            "version": "V1\n(retrait notes\nleak, lissage)",
+            "rmse": 254654,
+            "r2": 0.264,
+            "statut": "ok",
+        },
+        {
+            "version": "V2\n(ponderation\ncategorie)",
+            "rmse": 280407,
+            "r2": 0.205,
+            "statut": "abandonnee",
+        },
         {"version": "V3\n(sous-modele\nsalles)", "rmse": 262907, "r2": 0.325, "statut": "ok"},
         {"version": "V4\n(budget)", "rmse": 262606, "r2": 0.327, "statut": "ok"},
-        {"version": "V5\n(acteur/realisateur\nhabitue)", "rmse": 262559, "r2": 0.327, "statut": "ok"},
+        {
+            "version": "V5\n(acteur/realisateur\nhabitue)",
+            "rmse": 262559,
+            "r2": 0.327,
+            "statut": "ok",
+        },
     ]
 )
 

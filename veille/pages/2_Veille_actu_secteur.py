@@ -1,4 +1,10 @@
+import json
+from datetime import UTC, datetime
+from pathlib import Path
+
 import streamlit as st
+
+from veille.veille_scraping import ecrire_articles, scraper_articles_scraping
 
 st.set_page_config(
     page_title="Veille & actu secteur - Veille scraping", page_icon="🕵️", layout="wide"
@@ -6,6 +12,38 @@ st.set_page_config(
 
 st.title("Veille & actu secteur du scraping")
 st.caption("Sources citees pour chaque partie - pas de contenu invente.")
+
+st.header("Derniers articles collectes")
+st.markdown(
+    "Scrape [blog.apify.com](https://blog.apify.com/) (Playwright) et ne garde que "
+    "les articles sur le scraping (le blog couvre aussi agents IA, MCP, etc.). "
+    "Actualisation manuelle, a un rythme hebdomadaire."
+)
+
+CHEMIN_ARTICLES = Path(__file__).parent.parent / "articles_veille.json"
+
+if st.button("🔄 Actualiser la veille"):
+    with st.spinner("Scraping du blog en cours (Playwright, ~15s)..."):
+        articles = scraper_articles_scraping()
+        ecrire_articles(articles, CHEMIN_ARTICLES)
+    st.rerun()
+
+if CHEMIN_ARTICLES.exists():
+    donnees = json.loads(CHEMIN_ARTICLES.read_text())
+    date_maj = datetime.fromisoformat(donnees["date_maj"]).astimezone(UTC)
+    st.caption(f"Derniere actualisation : {date_maj:%d/%m/%Y %H:%M} UTC")
+    if donnees["articles"]:
+        for article in donnees["articles"]:
+            st.markdown(
+                f"- **[{article['titre']}]({article['url']})** "
+                f"— {article['auteur'] or 'auteur inconnu'}, {article['date'] or 'date inconnue'}"
+            )
+    else:
+        st.info("Aucun article sur le scraping lors du dernier passage (autres sujets publies).")
+else:
+    st.info("Pas encore de scraping execute - clique sur 'Actualiser la veille' ci-dessus.")
+
+st.markdown("---")
 
 # url trop longue pour tenir sur une ligne de markdown sans depasser 100 caracteres
 url_hiq = "https://calawyers.org/privacy-law/ninth-circuit-holds-data-scraping-is-legal-in-hiq-v-linkedin/"  # noqa: E501

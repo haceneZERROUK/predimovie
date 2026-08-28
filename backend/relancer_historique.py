@@ -55,7 +55,10 @@ def main():
                 print(f"  {i}/{len(films)}...")
 
         session.commit()
-        print(f"\n{nombre_ok} predictions recalculees, {nombre_erreurs} films sautes (donnees incompletes)")
+        print(
+            f"\n{nombre_ok} predictions recalculees, {nombre_erreurs} films sautes "
+            "(donnees incompletes)"
+        )
     finally:
         session.close()
 

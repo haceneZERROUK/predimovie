@@ -168,9 +168,7 @@ def historique_view(request):
         messages.error(request, str(erreur))
         resultat = {"predictions": [], "semaines_disponibles": []}
     for ligne in resultat["predictions"]:
-        ligne["gravite"] = _gravite_ecart(
-            ligne["ecart"], ligne["entrees_premiere_semaine_reelles"]
-        )
+        ligne["gravite"] = _gravite_ecart(ligne["ecart"], ligne["entrees_premiere_semaine_reelles"])
     contexte = {
         "historique": resultat["predictions"],
         # l'API renvoie des dates ISO en texte brut (ex: "2026-08-13") : on

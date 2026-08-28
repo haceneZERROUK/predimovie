@@ -6,7 +6,12 @@ WORKDIR /app
 COPY pyproject.toml README.md ./
 COPY veille ./veille
 
-RUN pip install --no-cache-dir .
+RUN pip install --no-cache-dir ".[veille]"
+# navigateur pour le scraping de veille (veille_scraping.py) - --with-deps
+# installe aussi les librairies systeme necessaires, plus lourd que le
+# BeautifulSoup+httpx utilise par data_engineering/ mais c'est assume
+# (cf comparatif technique, page 1 du POC)
+RUN playwright install --with-deps chromium
 
 EXPOSE 8501
 

@@ -1,0 +1,306 @@
+{
+  "date_maj": "2026-08-27T14:27:35.532799+00:00",
+  "articles": [
+    {
+      "titre": "The 12 best proxy providers for web scraping in 2026",
+      "url": "https://blog.apify.com/best-proxy-providers/",
+      "tags": [
+        "Tool comparisons",
+        "Anti-blocking"
+      ],
+      "auteur": "Theo Vasilis",
+      "date": "2026-07-15",
+      "extrait": ""
+    },
+    {
+      "titre": "Top 8 free or low-cost proxies for web scraping",
+      "url": "https://blog.apify.com/get-proxies-free-proxy-services/",
+      "tags": [
+        "Tool comparisons",
+        "Anti-blocking"
+      ],
+      "auteur": "Theo Vasilis",
+      "date": "2026-06-11",
+      "extrait": ""
+    },
+    {
+      "titre": "Error code 1020: Why Cloudflare blocks you and how to fix it",
+      "url": "https://blog.apify.com/cloudflare-error-1020-access-denied/",
+      "tags": [
+        "Anti-blocking",
+        "Tutorial",
+        "Crawlee"
+      ],
+      "auteur": "Egop Gogo-Job",
+      "date": "2026-04-20",
+      "extrait": ""
+    },
+    {
+      "titre": "Web scraping proxies in 2026: Higher demand, higher spend",
+      "url": "https://blog.apify.com/web-scraping-proxies/",
+      "tags": [
+        "Thought leadership",
+        "Anti-blocking"
+      ],
+      "auteur": "Theo Vasilis",
+      "date": "2026-01-30",
+      "extrait": ""
+    },
+    {
+      "titre": "How to scrape Facebook with Python (without getting blocked)",
+      "url": "https://blog.apify.com/scrape-facebook-python/",
+      "tags": [
+        "Social media intelligence",
+        "APIs and integrations",
+        "Python"
+      ],
+      "auteur": "Antonello Zanini",
+      "date": "2025-07-17",
+      "extrait": ""
+    },
+    {
+      "titre": "How to scrape Instagram with Python and avoid getting blocked",
+      "url": "https://blog.apify.com/scrape-instagram-python/",
+      "tags": [
+        "Social media intelligence",
+        "APIs and integrations",
+        "Python"
+      ],
+      "auteur": "Antonello Zanini",
+      "date": "2025-07-01",
+      "extrait": ""
+    },
+    {
+      "titre": "How to bypass Cloudflare (updated for 2025)",
+      "url": "https://blog.apify.com/bypass-cloudflare/",
+      "tags": [
+        "Anti-blocking",
+        "Crawlee",
+        "Tutorial"
+      ],
+      "auteur": "Antonello Zanini",
+      "date": "2025-05-27",
+      "extrait": ""
+    },
+    {
+      "titre": "How to scrape Zillow data (without getting blocked)",
+      "url": "https://blog.apify.com/how-to-scrape-zillow/",
+      "tags": [
+        "Real estate",
+        "Tutorial",
+        "Anti-blocking"
+      ],
+      "auteur": "Michelle Macias",
+      "date": "2025-05-19",
+      "extrait": ""
+    },
+    {
+      "titre": "What is an anonymous proxy? A detailed guide for 2025",
+      "url": "https://blog.apify.com/what-is-an-anonymous-proxy/",
+      "tags": [
+        "Anti-blocking"
+      ],
+      "auteur": "Michelle Macias",
+      "date": "2025-03-17",
+      "extrait": ""
+    },
+    {
+      "titre": "Building a We Work Remotely scraper with company enrichment using Apify Actors",
+      "url": "https://blog.apify.com/building-a-we-work-remotely-scraper/",
+      "tags": [
+        "Developer community",
+        "Scraping libraries and frameworks"
+      ],
+      "auteur": "CrawlPilot",
+      "date": "2026-07-03",
+      "extrait": ""
+    },
+    {
+      "titre": "Playwright vs. Selenium for web scraping",
+      "url": "https://blog.apify.com/playwright-vs-selenium/",
+      "tags": [
+        "Tool comparisons",
+        "Scraping libraries and frameworks",
+        "Web automation and RPA"
+      ],
+      "auteur": "Natasha Lekh",
+      "date": "2026-06-21",
+      "extrait": ""
+    },
+    {
+      "titre": "11 best open-source web crawlers and scrapers in 2026",
+      "url": "https://blog.apify.com/top-11-open-source-web-crawlers-and-one-powerful-web-scraper/",
+      "tags": [
+        "Tool comparisons",
+        "Scraping libraries and frameworks"
+      ],
+      "auteur": "Dávid Lukáč",
+      "date": "2026-06-11",
+      "extrait": ""
+    },
+    {
+      "titre": "The 9 best Python web scraping libraries in 2026",
+      "url": "https://blog.apify.com/what-are-the-best-python-web-scraping-libraries/",
+      "tags": [
+        "Python",
+        "Scraping libraries and frameworks",
+        "Crawlee"
+      ],
+      "auteur": "Egop Gogo-Job",
+      "date": "2026-05-21",
+      "extrait": ""
+    },
+    {
+      "titre": "Scrapy vs. Beautiful Soup: which one to choose for web scraping",
+      "url": "https://blog.apify.com/beautiful-soup-vs-scrapy-web-scraping/",
+      "tags": [
+        "Tool comparisons",
+        "Python",
+        "Scraping libraries and frameworks"
+      ],
+      "auteur": "Magda Rýdová",
+      "date": "2025-11-14",
+      "extrait": ""
+    },
+    {
+      "titre": "5 Scrapy alternatives for web scraping",
+      "url": "https://blog.apify.com/alternatives-scrapy-web-scraping/",
+      "tags": [
+        "Tool comparisons",
+        "Scraping libraries and frameworks",
+        "Python"
+      ],
+      "auteur": "Theo Vasilis",
+      "date": "2025-11-13",
+      "extrait": ""
+    },
+    {
+      "titre": "Firecrawl vs. BeautifulSoup: Which is better for web scraping?",
+      "url": "https://blog.apify.com/firecrawl-vs-beautifulsoup/",
+      "tags": [
+        "Tool comparisons",
+        "AI",
+        "Scraping libraries and frameworks"
+      ],
+      "auteur": "Antonello Zanini",
+      "date": "2025-09-03",
+      "extrait": ""
+    },
+    {
+      "titre": "5 best JavaScript web scraping libraries in 2025",
+      "url": "https://blog.apify.com/best-javascript-web-scraping-libraries/",
+      "tags": [
+        "Scraping libraries and frameworks",
+        "Tool comparisons",
+        "JavaScript and TypeScript"
+      ],
+      "auteur": "Theo Vasilis",
+      "date": "2025-06-11",
+      "extrait": ""
+    },
+    {
+      "titre": "IMPIT: browser impersonation made simple",
+      "url": "https://blog.apify.com/impit-browser-impersonation-made-simple/",
+      "tags": [
+        "programming",
+        "Scraping libraries and frameworks"
+      ],
+      "auteur": "Jindřich Bär",
+      "date": "2025-03-20",
+      "extrait": ""
+    },
+    {
+      "titre": "Best low-code and no-code AI agent builders in 2026",
+      "url": "https://blog.apify.com/ai-agent-builders/",
+      "tags": [
+        "AI agents",
+        "Web automation and RPA"
+      ],
+      "auteur": "Theo Vasilis",
+      "date": "2026-08-03",
+      "extrait": ""
+    },
+    {
+      "titre": "Browserbase vs. Nextbrowser for cloud-based browser automation",
+      "url": "https://blog.apify.com/browserbase-vs-nextbrowser/",
+      "tags": [
+        "Tool comparisons",
+        "AI agents",
+        "Web automation and RPA"
+      ],
+      "auteur": "Antonello Zanini",
+      "date": "2026-06-15",
+      "extrait": ""
+    },
+    {
+      "titre": "Top 9 Nextbrowser alternatives after its shutdown",
+      "url": "https://blog.apify.com/best-nextbrowser-alternatives/",
+      "tags": [
+        "AI agents",
+        "Tool comparisons",
+        "Web automation and RPA"
+      ],
+      "auteur": "Antonello Zanini",
+      "date": "2026-05-27",
+      "extrait": ""
+    },
+    {
+      "titre": "Why web RPA still matters for fintech",
+      "url": "https://blog.apify.com/putting-the-tech-in-fintech-rpa/",
+      "tags": [
+        "Finance and Fintech",
+        "Web automation and RPA"
+      ],
+      "auteur": "Theo Vasilis",
+      "date": "2026-01-18",
+      "extrait": ""
+    },
+    {
+      "titre": "How to bulk download all images from a URL list",
+      "url": "https://blog.apify.com/how-to-use-bulk-image-downloaders-to-get-all-images-from-a-website/",
+      "tags": [
+        "Tutorial",
+        "Web automation and RPA"
+      ],
+      "auteur": "Michelle Macias",
+      "date": "2025-12-10",
+      "extrait": ""
+    },
+    {
+      "titre": "How Apify automates its own processes",
+      "url": "https://blog.apify.com/how-apify-automates-its-own-processes/",
+      "tags": [
+        "Life at Apify",
+        "AI",
+        "Web automation and RPA"
+      ],
+      "auteur": "Fergus O'Sullivan",
+      "date": "2025-10-01",
+      "extrait": ""
+    },
+    {
+      "titre": "From BI to AI: Nate’s journey into automation",
+      "url": "https://blog.apify.com/from-bi-to-ai/",
+      "tags": [
+        "Partner stories",
+        "Marketing and lead generation",
+        "Web automation and RPA"
+      ],
+      "auteur": "Emilya Tonoyan",
+      "date": "2025-07-31",
+      "extrait": ""
+    },
+    {
+      "titre": "itrinity scaled lead gen ops from 10 emails a day to 400 a week with Apify",
+      "url": "https://blog.apify.com/scale-email-marketing-and-lead-generation/",
+      "tags": [
+        "Case studies",
+        "Marketing and lead generation",
+        "Web automation and RPA"
+      ],
+      "auteur": "Theo Vasilis",
+      "date": "2025-07-04",
+      "extrait": ""
+    }
+  ]
+}

@@ -11,3 +11,7 @@ JWT_DUREE_VALIDITE_MINUTES = 60
 
 CHEMIN_MODELE = os.environ.get("CHEMIN_MODELE", "ml/modele_champion.joblib")
 CHEMIN_ARTEFACTS = os.environ.get("CHEMIN_ARTEFACTS", "ml/artefacts_features.joblib")
+
+# cle partagee avec N8n pour declencher /admin/reentrainer-modele chaque
+# mois - meme principe que SCRAPER_API_KEY dans data_engineering/config.py
+TRAIN_API_KEY = os.environ.get("TRAIN_API_KEY", "")

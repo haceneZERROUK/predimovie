@@ -1,7 +1,9 @@
 # Entraine plusieurs modeles pour predire entrees_premiere_semaine, avec
 # une recherche d'hyperparametres sur chacun, et logue tout dans mlflow
 # (metriques, meilleurs parametres, features les plus importantes).
+import json
 import time
+from pathlib import Path
 
 import joblib
 import mlflow
@@ -24,6 +26,29 @@ N_ITER_RANDOM_SEARCH = 40
 # du rmse separe (diagnostic : est-ce qu'on est vraiment meilleur sur les
 # blockbusters, ou juste sur la masse des petits films ?)
 SEUIL_GROS_FILM = 500_000
+
+CHEMIN_CHAMPION = "ml/modele_champion.joblib"
+CHEMIN_METRIQUES_CHAMPION = "ml/modele_champion_metrics.json"
+
+# suite a l'incident V7 (poids par categorie trop agressifs, R2 0.264->0.072
+# deploye sans etre remarque avant un redemarrage manuel, cf rapport E5) :
+# on ne remplace plus le champion en place que si le nouveau rmse ne se
+# degrade pas de plus de 5% par rapport a lui.
+SEUIL_DEGRADATION_RMSE = 0.05
+
+
+def doit_remplacer_champion(
+    nouveau_rmse: float, ancien_rmse: float | None, seuil: float = SEUIL_DEGRADATION_RMSE
+) -> bool:
+    """Decide si le nouveau modele remplace le champion en place.
+
+    Pas d'ancien champion (premier entrainement) : on remplace toujours.
+    Sinon : on ne remplace que si le rmse ne s'est pas degrade de plus de
+    `seuil` (5% par defaut) par rapport a l'ancien."""
+    if ancien_rmse is None:
+        return True
+    return (nouveau_rmse - ancien_rmse) / ancien_rmse <= seuil
+
 
 # V4 : on ne garde que les 2 modeles qui sont sortis devant a chaque
 # iteration precedente (xgboost et catboost) - pas la peine de refaire
@@ -235,13 +260,39 @@ def main():
     print("features les plus importantes pour ce modele :")
     print(meilleur["importances"].head(15).to_string(index=False))
 
-    joblib.dump(meilleur["modele"], "ml/modele_champion.joblib")
+    ancien_rmse = None
+    if Path(CHEMIN_METRIQUES_CHAMPION).exists():
+        ancien_rmse = json.loads(Path(CHEMIN_METRIQUES_CHAMPION).read_text())["rmse"]
+
+    if not doit_remplacer_champion(meilleur["rmse"], ancien_rmse):
+        degradation = (meilleur["rmse"] - ancien_rmse) / ancien_rmse
+        print(
+            f"\nCHAMPION NON REMPLACE : rmse={meilleur['rmse']:.0f} degrade le champion "
+            f"en place (rmse={ancien_rmse:.0f}) de {degradation:.1%}, au-dela du seuil "
+            f"tolere ({SEUIL_DEGRADATION_RMSE:.0%}). Le run reste consultable dans mlflow "
+            "(run_id ci-dessus) mais ml/modele_champion.joblib n'est pas touche."
+        )
+        return
+
+    joblib.dump(meilleur["modele"], CHEMIN_CHAMPION)
     # les artefacts (vectoriseur tf-idf, stats d'encodage, medianes...) sont
     # ce dont l'API a besoin pour construire les features d'un film tout
     # neuf de la meme facon qu'ici, sans quoi le modele recevrait des
     # colonnes incoherentes avec ce sur quoi il a ete entraine
     joblib.dump(artefacts, "ml/artefacts_features.joblib")
-    print("\nmodele champion sauvegarde dans ml/modele_champion.joblib")
+    Path(CHEMIN_METRIQUES_CHAMPION).write_text(
+        json.dumps(
+            {
+                "nom_modele": meilleur["nom_modele"],
+                "rmse": meilleur["rmse"],
+                "mae": meilleur["mae"],
+                "r2": meilleur["r2"],
+                "run_id": meilleur["run_id"],
+            },
+            indent=2,
+        )
+    )
+    print(f"\nmodele champion sauvegarde dans {CHEMIN_CHAMPION}")
     print("artefacts de features sauvegardes dans ml/artefacts_features.joblib")
 
 
