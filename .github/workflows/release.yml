@@ -20,7 +20,10 @@ jobs:
         with:
           python-version: "3.11"
 
-      - run: pip install python-semantic-release
+      # version figee (pas juste "python-semantic-release") : un pip install
+      # sans contrainte a deja resout une combinaison incompatible avec
+      # GitPython (erreur "Actor has no attribute name_email_regex")
+      - run: pip install "python-semantic-release==10.6.1"
 
       - name: Semantic Release
         env:
