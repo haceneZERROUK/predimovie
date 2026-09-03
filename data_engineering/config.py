@@ -28,3 +28,6 @@ ALLOCINE_DELAI_ENTRE_REQUETES = 1.5  # secondes
 # Clé partagée avec N8n pour protéger les routes /scrape/* : pas de vrais
 # utilisateurs ici (pas besoin de JWT), juste un secret à connaître.
 SCRAPER_API_KEY = os.environ.get("SCRAPER_API_KEY", "")
+
+# Clé API Anthropic, pour extraire les 3 mots-cles du synopsis (Claude Haiku)
+SYNOPSIS_ENRICHMENT_API_KEY = os.environ.get("SYNOPSIS_ENRICHMENT_API_KEY", "")
