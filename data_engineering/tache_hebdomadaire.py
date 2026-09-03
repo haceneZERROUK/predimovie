@@ -1,7 +1,6 @@
-# Remplace le workflow n8n "scraping_hebdo" : scrape les sorties de la
-# semaine, extrait les mots-cles, met a jour le sous-modele salles, puis
-# demande au backend de relancer les predictions. Pense a etre lance en
-# cron Railway (pas de scheduler interne ici, contrairement a n8n).
+# Tache hebdo, lancee par un cron Railway : scrape les sorties de la
+# semaine, extrait les mots-cles, met a jour les predictions de salles et
+# demande au backend de relancer les predictions d'entrees.
 import os
 
 import httpx

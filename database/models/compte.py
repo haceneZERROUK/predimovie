@@ -8,21 +8,15 @@ from database.base import Base
 
 
 class RoleCompte(enum.StrEnum):
-    """Les deux rôles possibles pour un compte : soit un exploitant de
-    cinéma (qui consulte les prédictions pour son propre cinéma), soit
-    l'administrateur du projet (accès complet)."""
+    """Les deux roles possibles : exploitant de cinema ou admin."""
 
     CINEMA = "cinema"
     ADMIN = "admin"
 
 
 class Compte(Base):
-    """Un compte de connexion à l'application Django.
-
-    Choix de conception : un compte = un cinéma (pas de table `cinema`
-    séparée). La colonne `nom_cinema` n'est donc renseignée que pour les
-    comptes de rôle CINEMA ; elle reste vide (nullable) pour le compte ADMIN.
-    """
+    """Un compte de connexion. Un compte = un cinema, il n'y a pas de
+    table cinema a part. nom_cinema reste vide pour les admins."""
 
     __tablename__ = "compte"
 
@@ -33,6 +27,6 @@ class Compte(Base):
     nom_cinema: Mapped[str] = mapped_column(String(255), nullable=True)
     date_inscription: Mapped[date] = mapped_column(Date, nullable=False)
     derniere_connexion: Mapped[datetime] = mapped_column(DateTime, nullable=True)
-    # sert a desactiver un compte sans le supprimer ; non exploite cote
-    # backend/frontend pour l'instant (aucune route ne le passe a False)
+    # pour desactiver un compte sans le supprimer. Pas encore utilise,
+    # aucune route ne le passe a False.
     statut_compte: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)

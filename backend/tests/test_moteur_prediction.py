@@ -1,7 +1,5 @@
-# Verifie le rechargement a chaud du modele (backend/moteur_prediction.py) :
-# necessaire depuis que le reentrainement mensuel peut remplacer
-# modele_champion.joblib sans redemarrer l'API. On utilise de faux fichiers
-# joblib (pas de vrai modele ML) pour tester juste la logique de cache.
+# Tests du rechargement du modele quand le fichier change. On met de faux
+# fichiers joblib, on teste juste la logique de cache.
 import os
 import time
 
@@ -43,12 +41,12 @@ def test_recharge_seulement_si_le_fichier_a_change(monkeypatch, tmp_path):
     mp._charger_modele_si_necessaire()
     assert mp._modele == "modele-v1"
 
-    # rappel sans que le fichier ait change : reste sur la meme version
+    # le fichier n'a pas bouge, on doit rester sur la meme version
     mp._charger_modele_si_necessaire()
     assert mp._modele == "modele-v1"
 
-    # le reentrainement mensuel remplace le fichier par une nouvelle version
-    # (mtime deliberement decale pour ne pas dependre de la resolution du fs)
+    # on remplace le fichier. On decale le mtime a la main pour ne pas
+    # dependre de la precision du systeme de fichiers.
     joblib.dump("modele-v2", chemin_modele)
     joblib.dump("artefacts-v2", chemin_artefacts)
     plus_tard = time.time() + 10

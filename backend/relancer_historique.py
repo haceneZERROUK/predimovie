@@ -1,16 +1,7 @@
-# Script ponctuel (pas une route API - trop long pour une requete HTTP,
-# ~11 min sur toute la base) : recalcule la prediction de TOUS les films
-# deja sortis (entrees_premiere_semaine connu) avec le modele actuellement
-# charge, et stocke une nouvelle ligne Prediction pour chacun.
-#
-# Pourquoi : /predictions/relancer (backend/predictions_admin.py) ne
-# predit que les films PAS ENCORE sortis - une fois qu'un film sort, ses
-# lignes Prediction restent figees a la version du modele qui tournait
-# au moment ou elles ont ete calculees. Apres plusieurs reentrainements
-# (V1 a V5, cf rapport data science), l'historique melangeait donc des
-# predictions de plusieurs generations de modele differentes - pas une
-# vraie mesure de la precision du modele ACTUEL. Ce script remet tout
-# l'historique sur la meme base : le modele courant, pour tous les films.
+# Script a lancer a la main (~11 min, trop long pour une route HTTP) :
+# repasse tous les films deja sortis dans le modele actuel, pour que
+# l'historique ne melange plus des predictions faites avec des versions
+# differentes du modele.
 #
 # Usage : docker compose exec backend python3 -m backend.relancer_historique
 from datetime import UTC, datetime
@@ -37,8 +28,7 @@ def main():
             try:
                 valeur_predite = predire(id_oeuvre)
             except ValueError:
-                # film mal renseigne (pas assez d'infos pour les features) :
-                # on le saute plutot que de faire planter tout le script
+                # film trop mal renseigne, on le saute
                 nombre_erreurs += 1
                 continue
             session.add(

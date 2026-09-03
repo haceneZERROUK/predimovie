@@ -5,9 +5,8 @@ from sqlalchemy import create_engine
 
 from database.base import Base
 
-# backend/auth.py ouvre ses propres sessions (via database.base.SessionLocal),
-# pas les fixtures a rollback de database/tests/conftest.py. Il faut donc
-# s'assurer nous-memes que les tables existent avant de lancer ces tests.
+# le backend ouvre ses propres sessions et pas les fixtures a rollback de
+# database/tests, donc on cree les tables nous-memes avant les tests
 
 
 @pytest.fixture(scope="session", autouse=True)

@@ -1,6 +1,5 @@
-# Entraine plusieurs modeles pour predire entrees_premiere_semaine, avec
-# une recherche d'hyperparametres sur chacun, et logue tout dans mlflow
-# (metriques, meilleurs parametres, features les plus importantes).
+# Entraine les modeles qui predisent entrees_premiere_semaine, avec une
+# recherche d'hyperparametres sur chacun, et logue tout dans mlflow.
 import json
 import time
 from pathlib import Path
@@ -20,38 +19,29 @@ from ml.data import charger_dataset_train_test
 CV = 5
 N_ITER_RANDOM_SEARCH = 40
 
-# un film au-dessus de ce seuil est considere "gros film" pour le calcul
-# du rmse separe (diagnostic : est-ce qu'on est vraiment meilleur sur les
-# blockbusters, ou juste sur la masse des petits films ?)
+# au-dessus de ce seuil on parle de "gros film", pour calculer un rmse
+# separe sur les gros et sur les petits
 SEUIL_GROS_FILM = 500_000
 
 CHEMIN_CHAMPION = "ml/modele_champion.joblib"
 CHEMIN_METRIQUES_CHAMPION = "ml/modele_champion_metrics.json"
 
-# suite a l'incident V7 (poids par categorie trop agressifs, R2 0.264->0.072
-# deploye sans etre remarque avant un redemarrage manuel, cf rapport E5) :
-# on ne remplace plus le champion en place que si le nouveau rmse ne se
-# degrade pas de plus de 5% par rapport a lui.
+# on ne remplace le champion que si le rmse ne se degrade pas de plus de 5%
 SEUIL_DEGRADATION_RMSE = 0.05
 
 
 def doit_remplacer_champion(
     nouveau_rmse: float, ancien_rmse: float | None, seuil: float = SEUIL_DEGRADATION_RMSE
 ) -> bool:
-    """Decide si le nouveau modele remplace le champion en place.
-
-    Pas d'ancien champion (premier entrainement) : on remplace toujours.
-    Sinon : on ne remplace que si le rmse ne s'est pas degrade de plus de
-    `seuil` (5% par defaut) par rapport a l'ancien."""
+    """Dit si le nouveau modele doit remplacer le champion. Toujours oui
+    s'il n'y a pas encore de champion."""
     if ancien_rmse is None:
         return True
     return (nouveau_rmse - ancien_rmse) / ancien_rmse <= seuil
 
 
-# V4 : on ne garde que les 2 modeles qui sont sortis devant a chaque
-# iteration precedente (xgboost et catboost) - pas la peine de refaire
-# tourner ridge/lasso/random_forest/gradient_boosting/hist_gradient_boosting
-# a chaque fois, ils ont toujours fini derriere
+# on ne garde que xgboost et catboost, les autres (ridge, lasso, random
+# forest, gradient boosting) finissaient toujours derriere
 MODELES = {
     "xgboost": {
         "estimateur": XGBRegressor(random_state=42),
@@ -66,8 +56,7 @@ MODELES = {
         },
     },
     "catboost": {
-        # thread_count=1 pareil que les autres, pour laisser la recherche
-        # d'hyperparametres gerer le parallelisme toute seule
+        # thread_count=1, c'est RandomizedSearchCV qui gere le parallelisme
         "estimateur": CatBoostRegressor(random_state=42, thread_count=1, verbose=0),
         "grille": {
             "iterations": [200, 400, 600, 900],
@@ -81,10 +70,8 @@ MODELES = {
 
 
 def _importance_features(modele, colonnes: list[str], X_test, y_test_log) -> pd.DataFrame:
-    """Recupere l'importance de chaque feature, peu importe le type de
-    modele (arbres = feature_importances_, lineaire = valeur absolue des
-    coefficients, et pour le reste -comme HistGradientBoosting qui n'a ni
-    l'un ni l'autre- on calcule une permutation_importance)."""
+    """Importance des features selon le type de modele : arbres, modele
+    lineaire, ou permutation_importance si le modele n'expose rien."""
     if hasattr(modele, "feature_importances_"):
         valeurs = modele.feature_importances_
     elif hasattr(modele, "coef_"):
@@ -104,8 +91,8 @@ def _importance_features(modele, colonnes: list[str], X_test, y_test_log) -> pd.
 def entrainer_un_modele(
     nom_modele: str, config: dict, X_train, X_test, y_train_log, y_test, poids_train
 ):
-    """Fait la recherche d'hyperparametres pour un modele, logue tout dans
-    mlflow, et renvoie les metriques du meilleur essai pour comparer a la fin."""
+    """Lance la recherche d'hyperparametres, logue dans mlflow et renvoie
+    les metriques du meilleur essai."""
     print(f"\n=== {nom_modele} ===")
     debut = time.time()
 
@@ -119,16 +106,10 @@ def entrainer_un_modele(
         random_state=42,
     )
 
-    # entrainement sur la cible en log (les entrees c'est tres etale,
-    # log1p rend la distribution plus proche d'une gaussienne). Le poids
-    # (entrees brutes) dit au modele de se concentrer plus fort sur les
-    # gros films : se planter dessus coute plus cher pendant l'entrainement.
-    # Teste sans en V6 (priorite aux petits/moyens films), remis tel quel
-    # ensuite : les petits cinemas independants programment aussi des
-    # blockbusters, il faut rester bon dessus.
+    # on entraine sur log1p(entrees) : la distribution est tres etalee
     recherche.fit(X_train, np.log1p(y_train_log), sample_weight=poids_train)
 
-    # on repasse en vraies entrees pour evaluer, plus parlant que le log
+    # et on repasse en vraies entrees pour evaluer
     predictions_log = recherche.predict(X_test)
     predictions = np.expm1(predictions_log).clip(min=0)
 
@@ -136,8 +117,7 @@ def entrainer_un_modele(
     mae = mean_absolute_error(y_test, predictions)
     r2 = r2_score(y_test, predictions)
 
-    # rmse separe gros films / petits films : est-ce que la ponderation a
-    # vraiment aide sur les gros, sans trop degrader le reste ?
+    # rmse separe sur les gros et les petits films
     masque_gros = y_test >= SEUIL_GROS_FILM
     rmse_gros = mean_squared_error(y_test[masque_gros], predictions[masque_gros]) ** 0.5
     rmse_petits = mean_squared_error(y_test[~masque_gros], predictions[~masque_gros]) ** 0.5
@@ -151,39 +131,16 @@ def entrainer_un_modele(
     )
 
     with mlflow.start_run(run_name=nom_modele):
-        # V5 : pourquoi ce reentrainement (visible dans l'UI mlflow, onglet
-        # "Tags", pour qu'on se souvienne du "pourquoi" en regardant les
-        # metriques plus tard)
+        # note de version, pour se souvenir de ce qui a change quand on
+        # relit les metriques dans mlflow plus tard
         mlflow.set_tag(
             "motif_reentrainement",
-            "V6 : retire note_tmdb/note_imdb (data leak temporel : notes "
-            "ecrasees a la valeur ACTUELLE de TMDB/IMDb a chaque passage du "
-            "pipeline, donc murie post-sortie pour les donnees backfillees) ; "
-            "POIDS_LISSAGE 8->2 (encodage cible acteur/realisateur/production/"
-            "genre moins tire vers la moyenne globale) ; sample_weight = "
-            "entrees brutes, sans ponderation par categorie (essaye en V7, "
-            "gain mitige et un premier essai avec des multiplicateurs trop "
-            "agressifs avait fait s'effondrer le modele - abandonne, retour "
-            "a la version simple). Iteration precedente : ajoute nb_salles_predites, "
-            "sortie d'un sous-modele leger (ml/salles.py) qui predit le "
-            "nombre de salles en semaine 1 a partir du budget/genre/casting/"
-            "saisonnalite - le vrai nb_salles_semaine1 n'existe que "
-            "retrospectivement sur JPBOX, jamais disponible avant une sortie "
-            "reelle (verifie en conditions reelles). Cette iteration : ajoute "
-            "budget en feature directe (en plus de son usage dans le sous-modele "
-            "salles). Analyse ANOVA/Pearson sur les donnees brutes (avant tout "
-            "feature engineering) : budget a r=0.484 avec la cible, 2e correlation "
-            "la plus forte apres les fuites connues (note_tmdb/imdb, "
-            "nb_salles_semaine1) - signal fort jusque-la seulement filtre "
-            "indirectement via nb_salles_predites, jamais expose tel quel au "
-            "modele principal (gain reel quasi nul au final, deja capte par "
-            "nb_salles_predites). Ajoute aussi acteur_habitue et "
-            "realisateur_habitue (le film a-t-il un acteur/realisateur credite "
-            "dans >= 10 films du train ? cf SEUIL_HABITUE) - tres significatif "
-            "en ANOVA sur donnees brutes (acteur F=269.5 p=8.2e-60, "
-            "realisateur F=144.3 p=5.0e-33) mais potentiellement redondant "
-            "avec acteur_pop_max/realisateur_pop_max deja dans le modele "
-            "(meme signal, version binaire vs continue).",
+            "V6 : retire note_tmdb et note_imdb (fuite temporelle, ces notes "
+            "sont ecrasees a leur valeur actuelle a chaque scraping) ; "
+            "POIDS_LISSAGE passe de 8 a 2 ; sample_weight = entrees brutes, "
+            "sans ponderation par categorie (essayee en V7, abandonnee). "
+            "Ajoute aussi budget en feature directe, acteur_habitue et "
+            "realisateur_habitue.",
         )
         mlflow.log_param("modele", nom_modele)
         mlflow.log_params(recherche.best_params_)
@@ -201,9 +158,8 @@ def entrainer_un_modele(
         importances.head(30).to_csv(chemin_csv, index=False)
         mlflow.log_artifact(chemin_csv)
 
-        # simple joblib + artifact plutot que mlflow.sklearn.log_model :
-        # ce dernier bloque xgboost par securite (types "non fiables"), autant
-        # avoir la meme methode de sauvegarde pour tous les modeles
+        # joblib + log_artifact plutot que mlflow.sklearn.log_model, qui
+        # refuse de sauvegarder xgboost
         chemin_modele = f"/tmp/modele_{nom_modele}.joblib"
         joblib.dump(recherche.best_estimator_, chemin_modele)
         mlflow.log_artifact(chemin_modele)
@@ -223,22 +179,16 @@ def entrainer_un_modele(
 
 
 def main():
-    # deplace ici (pas au niveau module) : sinon le simple fait d'importer
-    # ml.train (ex: backend au demarrage, via reentrainement.py) initialise
-    # mlflow et cree ses tables - trop lent, ca a fait echouer le healthcheck
-    # Railway du backend au demarrage (5 min de timeout largement depasses)
+    # a laisser dans main() : au niveau module, importer ml.train suffisait
+    # a initialiser mlflow et le backend mettait trop longtemps a demarrer
     mlflow.set_experiment("predimovie-entrees-premiere-semaine")
 
     print("chargement des donnees depuis postgres...")
     X_train, X_test, y_train, y_test, artefacts = charger_dataset_train_test()
     print(f"{len(X_train) + len(X_test)} films, {X_train.shape[1]} features")
 
-    # poids = entrees brutes du train : un blockbuster pese beaucoup plus
-    # lourd dans la fonction de cout qu'un petit film (V3). Le poids par
-    # categorie francais/gros-succes teste en V7 a ete abandonne : gain
-    # mitige, et le modele s'etait effondre au premier essai avec des
-    # multiplicateurs trop agressifs (cf mlflow, tag motif_reentrainement
-    # des runs V7) - on revient a la version simple, plus honnete.
+    # poids = entrees brutes : un gros film pese plus lourd dans la
+    # fonction de cout qu'un petit
     poids_train = y_train.to_numpy()
 
     resultats = []
@@ -279,10 +229,8 @@ def main():
         return
 
     joblib.dump(meilleur["modele"], CHEMIN_CHAMPION)
-    # les artefacts (vectoriseur tf-idf, stats d'encodage, medianes...) sont
-    # ce dont l'API a besoin pour construire les features d'un film tout
-    # neuf de la meme facon qu'ici, sans quoi le modele recevrait des
-    # colonnes incoherentes avec ce sur quoi il a ete entraine
+    # les artefacts (vectoriseur, stats d'encodage, medianes...) servent a
+    # l'API pour refaire les memes features au moment de predire
     joblib.dump(artefacts, "ml/artefacts_features.joblib")
     Path(CHEMIN_METRIQUES_CHAMPION).write_text(
         json.dumps(

@@ -16,11 +16,8 @@ class Production(Base):
 
 
 class ProductionOeuvre(Base):
-    """Table d'association production <-> oeuvre (many-to-many) : une
-    société peut produire plusieurs films, et un film peut avoir plusieurs
-    sociétés de production (co-production). Voir `ActeurOeuvre` dans
-    acteur.py pour une explication plus détaillée de ce type de table.
-    """
+    """Table d'association production <-> oeuvre. Un film peut avoir
+    plusieurs societes quand c'est une co-production."""
 
     __tablename__ = "production_oeuvre"
 

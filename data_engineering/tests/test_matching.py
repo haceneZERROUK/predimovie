@@ -1,5 +1,4 @@
-# Tests du module matching.py : pas besoin de réseau, on teste juste
-# la logique de comparaison de titres.
+# Tests de la comparaison de titres, pas de reseau la-dedans
 from data_engineering.matching import (
     meme_film,
     nettoyer_annotations,
@@ -53,7 +52,7 @@ def test_nettoyer_annotations_laisse_titre_normal():
 
 
 def test_meme_film_ignore_annotation_jpbox():
-    # "(Rep. 2026)" est une mention JPBOX de reprise, pas un vrai titre :
-    # sans nettoyage, le score de ressemblance tombe sous le seuil.
+    # "(Rep. 2026)" ne fait pas partie du titre, sans nettoyage le score
+    # passe sous le seuil
     resultat_tmdb = {"title": "Ghost in the Shell", "release_date": "1995-11-18"}
     assert meme_film("Ghost in the Shell (Rep. 2026)", None, resultat_tmdb) is True

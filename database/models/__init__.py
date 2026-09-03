@@ -1,7 +1,5 @@
-# On importe ici tous les modèles (une classe = une table) pour qu'ils
-# soient enregistrés sur `Base.metadata` dès qu'on importe `database.models`.
-# C'est ce fichier qu'Alembic (les migrations) et les tests utilisent pour
-# connaître l'ensemble des tables à créer.
+# On importe tous les modeles ici pour qu'ils soient enregistres sur
+# Base.metadata, c'est ce que lisent Alembic et les tests.
 from database.models.acteur import Acteur, ActeurOeuvre
 from database.models.compte import Compte, RoleCompte
 from database.models.genre import Genre, GenreOeuvre

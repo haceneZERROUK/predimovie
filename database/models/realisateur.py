@@ -17,11 +17,7 @@ class Realisateur(Base):
 
 
 class RealisateurOeuvre(Base):
-    """Table d'association réalisateur <-> oeuvre (many-to-many) : un film
-    peut avoir plusieurs réalisateurs, et un réalisateur peut avoir réalisé
-    plusieurs films. Voir `ActeurOeuvre` dans acteur.py pour une explication
-    plus détaillée de ce type de table.
-    """
+    """Table d'association realisateur <-> oeuvre."""
 
     __tablename__ = "realisateur_oeuvre"
 

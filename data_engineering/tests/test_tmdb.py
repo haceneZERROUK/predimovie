@@ -1,5 +1,4 @@
-# Test de date_sortie_france() : pas besoin de reseau, on lui donne
-# directement une reponse TMDB /release_dates factice.
+# Test de date_sortie_france avec une fausse reponse TMDB, pas de reseau
 from data_engineering.tmdb import date_sortie_france
 
 
@@ -18,8 +17,7 @@ def test_date_sortie_france_prend_la_date_theatrale():
 
 
 def test_date_sortie_france_ignore_avant_premiere():
-    """Type 2 = "Premiere" (avant-premiere) : on veut la vraie sortie
-    nationale (type 3), pas la date d'un evenement presse isole."""
+    """Le type 2 c'est une avant-premiere, on veut le type 3."""
     resultats = [
         {
             "iso_3166_1": "FR",
@@ -43,8 +41,7 @@ def test_date_sortie_france_renvoie_none_si_pas_de_france():
 
 
 def test_date_sortie_france_renvoie_none_si_pas_de_sortie_salle():
-    """La France est bien listee mais avec seulement une avant-premiere,
-    pas de vraie sortie nationale (type 3) : pas de date fiable."""
+    """La France est listee mais sans sortie nationale : on renvoie None."""
     resultats = [
         {
             "iso_3166_1": "FR",

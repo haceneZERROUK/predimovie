@@ -1,16 +1,12 @@
-# Petites fonctions pour interroger l'API TMDB (https://www.themoviedb.org).
-# TMDB nous donne le synopsis, les genres, le casting et le réalisateur
-# d'un film : des informations plus riches et plus fiables à récupérer
-# ici qu'en scrapant du HTML.
+# Appels a l'API TMDB (synopsis, genres, casting, dates de sortie)
 import httpx
 
 from data_engineering.config import TMDB_API_KEY, TMDB_BASE_URL
 
 
 def rechercher_films(titre: str, annee: int | None = None) -> list[dict]:
-    """Cherche un film sur TMDB par titre (+ année si on la connaît).
-    Retourne tous les résultats : le bon film n'est pas toujours le premier
-    (ex: un titre court comme "Who" est noyé parmi des films plus connus)."""
+    """Cherche un film par titre, et par annee si on l'a. Renvoie tous les
+    resultats, le bon n'est pas forcement le premier."""
     params = {"api_key": TMDB_API_KEY, "query": titre, "language": "fr-FR"}
     if annee:
         params["year"] = annee
@@ -20,8 +16,7 @@ def rechercher_films(titre: str, annee: int | None = None) -> list[dict]:
 
 
 def trouver_par_imdb_id(imdb_id: str) -> dict | None:
-    """Retrouve un film TMDB à partir de son identifiant IMDb.
-    C'est une jointure exacte, plus fiable qu'une recherche par titre."""
+    """Retrouve un film TMDB avec son id IMDb."""
     params = {"api_key": TMDB_API_KEY, "external_source": "imdb_id"}
     reponse = httpx.get(f"{TMDB_BASE_URL}/find/{imdb_id}", params=params, timeout=10)
     reponse.raise_for_status()
@@ -30,7 +25,7 @@ def trouver_par_imdb_id(imdb_id: str) -> dict | None:
 
 
 def get_details_film(tmdb_id: int) -> dict:
-    """Récupère le synopsis, les genres et les sociétés de production."""
+    """Fiche complete du film : synopsis, genres, budget, societes de prod..."""
     params = {"api_key": TMDB_API_KEY, "language": "fr-FR"}
     reponse = httpx.get(f"{TMDB_BASE_URL}/movie/{tmdb_id}", params=params, timeout=10)
     reponse.raise_for_status()
@@ -38,8 +33,8 @@ def get_details_film(tmdb_id: int) -> dict:
 
 
 def get_casting_film(tmdb_id: int) -> dict:
-    """Récupère la liste des acteurs (cast) et de l'équipe technique (crew),
-    dont le réalisateur fait partie."""
+    """Casting du film : les acteurs (cast) et l'equipe technique (crew),
+    ou on retrouve le realisateur."""
     params = {"api_key": TMDB_API_KEY, "language": "fr-FR"}
     reponse = httpx.get(f"{TMDB_BASE_URL}/movie/{tmdb_id}/credits", params=params, timeout=10)
     reponse.raise_for_status()
@@ -47,9 +42,7 @@ def get_casting_film(tmdb_id: int) -> dict:
 
 
 def get_dates_sortie_par_pays(tmdb_id: int) -> list[dict]:
-    """Récupère les dates de sortie officielles, pays par pays. Le champ
-    "release_date" de get_details_film() n'est pas forcement la date
-    française (souvent la date US) : on utilise ça pour la vraie date FR."""
+    """Les dates de sortie du film pays par pays."""
     params = {"api_key": TMDB_API_KEY}
     reponse = httpx.get(f"{TMDB_BASE_URL}/movie/{tmdb_id}/release_dates", params=params, timeout=10)
     reponse.raise_for_status()
@@ -57,9 +50,8 @@ def get_dates_sortie_par_pays(tmdb_id: int) -> list[dict]:
 
 
 def date_sortie_france(resultats_par_pays: list[dict]) -> str | None:
-    """Cherche la date de sortie en salle (type 3 = "Theatrical") en
-    France dans le resultat de get_dates_sortie_par_pays().
-    Renvoie None si TMDB n'a pas encore de date FR pour ce film."""
+    """Prend la date de sortie en salle en France (type 3 = "Theatrical")
+    dans ce que renvoie get_dates_sortie_par_pays(). None s'il n'y en a pas."""
     for pays in resultats_par_pays:
         if pays.get("iso_3166_1") != "FR":
             continue

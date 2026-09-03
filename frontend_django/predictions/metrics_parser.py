@@ -1,6 +1,5 @@
-# Parseur tout simple du texte expose par /metrics (format Prometheus).
-# On ne veut que quelques chiffres pour une page "monitoring" basique,
-# pas besoin d'une vraie lib Prometheus cote Django pour ca.
+# Parse le texte de /metrics pour en sortir 3-4 chiffres a afficher sur la
+# page monitoring. Pas besoin d'une lib Prometheus pour ca.
 import re
 
 LIGNE_REQUETE = re.compile(

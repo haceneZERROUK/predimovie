@@ -1,6 +1,5 @@
-# Declenche le reentrainement mensuel du modele (route deja protegee par
-# TRAIN_API_KEY, cf backend/reentrainement.py). Pense a etre lance en cron
-# Railway - remplace le workflow n8n "reentrainement_mensuel".
+# Tache mensuelle, lancee par un cron Railway : demande au backend de
+# reentrainer le modele.
 import os
 
 import httpx
@@ -10,8 +9,8 @@ TRAIN_API_KEY = os.environ.get("TRAIN_API_KEY", "")
 
 
 def main():
-    # meme timeout court que dans le workflow n8n : la route repond tout de
-    # suite (entrainement lance en arriere-plan, ca prend 25-40 min)
+    # timeout court : la route repond tout de suite, l'entrainement tourne
+    # en arriere-plan (25-40 min)
     reponse = httpx.post(
         f"{BACKEND_URL}/admin/reentrainer-modele",
         headers={"X-Api-Key": TRAIN_API_KEY},

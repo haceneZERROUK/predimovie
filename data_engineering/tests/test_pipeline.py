@@ -1,4 +1,4 @@
-# Tests des petites fonctions pures du pipeline (pas besoin de DB/reseau).
+# Tests des fonctions du pipeline qui ne touchent ni la base ni le reseau
 from datetime import date
 
 from data_engineering.pipeline import prochain_mercredi

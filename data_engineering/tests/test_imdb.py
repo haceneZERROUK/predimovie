@@ -1,5 +1,4 @@
-# Test du parsing du fichier IMDb : pas besoin de réseau, on utilise
-# un petit extrait de TSV directement dans le test.
+# Test du parsing du fichier IMDb, avec un petit bout de TSV en dur
 from data_engineering.imdb import extraire_notes_imdb
 
 TSV_EXEMPLE = "tconst\taverageRating\tnumVotes\ntt1160419\t8.0\t1077956\ntt0000001\t5.7\t2220\n"

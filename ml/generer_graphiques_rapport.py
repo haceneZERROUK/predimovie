@@ -1,8 +1,8 @@
-# Script ponctuel (pas partie du pipeline) pour sortir des graphiques a
-# partir des runs mlflow deja loggues, pour le rapport dans explication/.
+# Script a part du pipeline : sort les graphiques du rapport a partir des
+# runs mlflow.
 import matplotlib
 
-matplotlib.use("Agg")  # pas d'ecran ici, on sauvegarde juste en fichier png
+matplotlib.use("Agg")  # pas d'ecran, on sauvegarde juste des png
 
 import joblib
 import matplotlib.pyplot as plt
@@ -95,8 +95,7 @@ def graphique_importance_champion(client, run_id_champion: str, nom_champion: st
 
 
 def graphique_importance_mots_cles(importances_completes: pd.DataFrame):
-    """Zoom sur la question : est-ce que les mots-cles extraits par l'IA
-    servent vraiment a quelque chose pour le modele ?"""
+    """Compare le poids des features motcle_ au reste des features."""
     motcles = importances_completes[importances_completes["feature"].str.startswith("motcle_")]
     autres = importances_completes[~importances_completes["feature"].str.startswith("motcle_")]
 
@@ -154,8 +153,8 @@ def graphique_gros_vs_petits(resultats: pd.DataFrame):
 
 
 def graphique_predictions_vs_reel(run_id_champion: str, nom_champion: str):
-    """Recharge le modele champion et compare ses predictions aux vraies
-    entrees sur le jeu de test, pour voir visuellement ou il se trompe."""
+    """Recharge le champion et trace ses predictions contre les vraies
+    entrees du jeu de test."""
     chemin_modele = mlflow.artifacts.download_artifacts(
         run_id=run_id_champion, artifact_path=f"modele_{nom_champion}.joblib"
     )
@@ -197,11 +196,8 @@ def graphique_distribution_cible():
     plt.close(fig)
 
 
-# chiffres recopies depuis les runs mlflow reels de chaque iteration (cf
-# rapport_modeles_metriques, section 2). V2 a ete abandonnee : on montre la
-# version "corrigee" (multiplicateurs adoucis), la seule gardee dans le
-# rapport - le premier essai agressif (R2 0.072) n'est qu'un warning, pas
-# une iteration a comparer sur la meme echelle.
+# chiffres recopies a la main depuis les runs mlflow. Pour V2 on met la
+# version corrigee, le premier essai s'etait effondre (R2 0.072).
 EVOLUTION_ITERATIONS = pd.DataFrame(
     [
         {
@@ -248,12 +244,9 @@ def graphique_evolution():
     plt.close(fig)
 
 
-# le run avec le plus petit RMSE toutes iterations confondues n'est PAS le
-# champion actuel : le dataset a grossi entre V1 et V5 (10 322 -> 10 352
-# films), donc le RMSE brut de V1 (jeu de test plus ancien/different) n'est
-# pas comparable terme a terme aux iterations suivantes. Le vrai champion,
-# c'est le dernier run logue, celui dont modele_champion.joblib vient
-# effectivement d'etre ecrase (cf ml/train.py, main()).
+# run_id note en dur : le run avec le plus petit RMSE n'est pas le
+# champion, le dataset a grossi entre V1 et V5 donc les RMSE ne sont pas
+# comparables. Le champion c'est le dernier run logue.
 RUN_ID_CHAMPION_ACTUEL = "3a7acbaf5b3b4fc38149991b107546ba"  # catboost, V5
 
 

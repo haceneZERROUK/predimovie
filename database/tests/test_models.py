@@ -1,7 +1,5 @@
-# Test "d'intégration" : il vérifie que les modèles SQLAlchemy définis
-# dans database/models/ correspondent bien à un schéma cohérent, en
-# créant un vrai film en base et en relisant ses relations (nature,
-# genres, acteurs). `db_session` vient de conftest.py.
+# Cree un vrai film en base et relit ses relations, pour verifier que le
+# schema tient debout. db_session vient de conftest.py.
 from datetime import date
 
 from database.models import (
@@ -17,7 +15,7 @@ from database.models import (
 
 
 def test_oeuvre_with_nature_genre_acteur(db_session):
-    # 1. On construit les objets en mémoire (rien n'est encore en BDD).
+    # on construit tout en memoire, rien n'est encore en base
     nature = Nature(nom_nature="Film")
     genre = Genre(nom_genre="Science-fiction")
     oeuvre = Oeuvre(
@@ -32,19 +30,17 @@ def test_oeuvre_with_nature_genre_acteur(db_session):
         entrees_premiere_semaine=1_200_000,
         nature=nature,
     )
-    # oeuvre.genres_assoc / .acteurs_assoc sont les tables d'association
-    # (many-to-many) définies via `relationship()` dans oeuvre.py.
+    # genres_assoc et acteurs_assoc sont les tables d'association
     oeuvre.genres_assoc.append(GenreOeuvre(genre=genre))
     acteur = Acteur(nom="Chalamet", prenom="Timothée")
     oeuvre.acteurs_assoc.append(ActeurOeuvre(acteur=acteur, role="Paul Atreides"))
 
-    # 2. On envoie tout ça en base (SQLAlchemy déduit l'ordre des insertions
-    # à partir des relations : nature, puis oeuvre, puis les associations).
+    # on envoie en base, SQLAlchemy se debrouille avec l'ordre des inserts
     db_session.add(oeuvre)
     db_session.flush()
 
-    # 3. On vérifie que tout a bien été sauvegardé et relié correctement.
-    assert oeuvre.id_oeuvre is not None  # un id a été généré par la BDD
+    # et on verifie que tout est bien relie
+    assert oeuvre.id_oeuvre is not None  # la base a bien genere un id
     assert oeuvre.nature.nom_nature == "Film"
     assert oeuvre.entrees_premiere_semaine == 1_200_000
     assert oeuvre.note_tmdb == 7.8

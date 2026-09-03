@@ -14,11 +14,7 @@ class Genre(Base):
 
 
 class GenreOeuvre(Base):
-    """Table d'association genre <-> oeuvre (many-to-many) : un film peut
-    avoir plusieurs genres, et un genre s'applique à plusieurs films.
-    Voir `ActeurOeuvre` dans acteur.py pour une explication plus détaillée
-    de ce type de table.
-    """
+    """Table d'association genre <-> oeuvre."""
 
     __tablename__ = "genre_oeuvre"
 

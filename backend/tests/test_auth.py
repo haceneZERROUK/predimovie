@@ -1,5 +1,4 @@
-# Test d'integration de /auth/login : cree un vrai compte en base de
-# test, verifie que la connexion marche, puis nettoie derriere lui.
+# Tests de /auth/login, avec un vrai compte cree en base de test
 from datetime import date
 
 import pytest
@@ -15,9 +14,8 @@ client = TestClient(app)
 
 @pytest.fixture
 def compte_test():
-    """Cree un compte reel (commit) car /auth/login ouvre sa propre
-    session vers la vraie base, independante des fixtures habituelles
-    a rollback. On le supprime nous-memes a la fin du test."""
+    """Cree vraiment le compte (commit) parce que /auth/login ouvre sa
+    propre session. On le supprime a la fin du test."""
     session = SessionLocal()
     compte = Compte(
         mail="test-backend@example.com",

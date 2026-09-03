@@ -1,6 +1,5 @@
-# Test de /films-a-venir : cree de vrais films (mercredi prochain, deja
-# sorti mais entrees manquantes, dans 2 mois, sans date du tout), verifie
-# que seul celui du mercredi prochain ressort, et nettoie derriere lui.
+# Tests de /films-a-venir. On cree des films a differentes dates et on
+# verifie lesquels ressortent, puis on nettoie.
 from datetime import date, timedelta
 
 import pytest
@@ -32,9 +31,8 @@ def _creer_film(
     id_tmdb: int | None = 999999,
     annee_sortie: int | None = None,
 ) -> Oeuvre:
-    """id_tmdb a une valeur par defaut (film "enrichi") : /films-a-venir
-    exclut les films sans fiche TMDB (cf backend/films.py), la plupart des
-    tests d'ici testent le filtre sur la date, pas sur la metadata."""
+    """id_tmdb est rempli par defaut, sinon la route exclut le film et on
+    ne testerait plus le filtre sur les dates."""
     session = SessionLocal()
     nature = _get_ou_creer_nature(session)
     oeuvre = Oeuvre(
@@ -69,8 +67,7 @@ def film_pas_sorti():
 
 @pytest.fixture
 def film_deja_sorti_sans_entrees():
-    """Film sorti la semaine derniere mais dont les entrees n'ont jamais
-    ete renseignees : ne doit pas etre traite comme "a venir"."""
+    """Film sorti la semaine derniere sans entrees renseignees."""
     oeuvre = _creer_film("Film Test Deja Sorti", date.today() - timedelta(days=7))
     yield oeuvre
     _supprimer_film(oeuvre)
@@ -94,8 +91,7 @@ def film_avec_synopsis():
 
 @pytest.fixture
 def film_jeudi():
-    """Certaines sorties (avant-premieres, distribution limitee) tombent
-    le jeudi de la semaine du mercredi a venir, pas le mercredi pile."""
+    """Certains films sortent le jeudi et pas le mercredi."""
     oeuvre = _creer_film("Film Test Jeudi", _prochain_mercredi() + timedelta(days=1))
     yield oeuvre
     _supprimer_film(oeuvre)
@@ -110,8 +106,7 @@ def film_vendredi():
 
 @pytest.fixture
 def film_samedi():
-    """Le samedi fait encore partie de la semaine de sortie (fenetre
-    mercredi-samedi, 4 jours)."""
+    """Le samedi est encore dans la fenetre."""
     oeuvre = _creer_film("Film Test Samedi", _prochain_mercredi() + timedelta(days=3))
     yield oeuvre
     _supprimer_film(oeuvre)
@@ -119,8 +114,7 @@ def film_samedi():
 
 @pytest.fixture
 def film_dimanche():
-    """Le dimanche est deja la semaine suivante : ne doit pas ressortir
-    (fenetre mercredi-samedi seulement)."""
+    """Le dimanche est deja la semaine suivante, il ne doit pas sortir."""
     oeuvre = _creer_film("Film Test Dimanche", _prochain_mercredi() + timedelta(days=4))
     yield oeuvre
     _supprimer_film(oeuvre)
@@ -128,8 +122,7 @@ def film_dimanche():
 
 @pytest.fixture
 def film_sans_metadata():
-    """Pas de fiche TMDB (id_tmdb=None) : pas assez d'infos pour une
-    prediction fiable, cf le bug des 5 premiers films tous identiques."""
+    """Film sans fiche TMDB, donc pas assez d'infos pour predire."""
     oeuvre = _creer_film("Film Test Sans Metadata", _prochain_mercredi(), id_tmdb=None)
     yield oeuvre
     _supprimer_film(oeuvre)
@@ -137,8 +130,7 @@ def film_sans_metadata():
 
 @pytest.fixture
 def film_ressortie():
-    """Vieux film reprogramme des annees plus tard (ex: retrospective) :
-    annee_sortie tres eloignee de la date de programmation."""
+    """Vieux film reprogramme, avec une annee_sortie tres eloignee."""
     oeuvre = _creer_film(
         "Film Test Ressortie", _prochain_mercredi(), id_tmdb=888888, annee_sortie=1990
     )
@@ -148,9 +140,7 @@ def film_ressortie():
 
 @pytest.fixture
 def film_dans_2_mois():
-    """Film pas encore sorti mais pas du mercredi a venir non plus (sort
-    dans 2 mois) : on ne veut que les sorties de la semaine, pas tout ce
-    qui est dans le futur."""
+    """Film qui sort dans 2 mois : trop loin, on ne veut que la semaine."""
     oeuvre = _creer_film("Film Test Dans 2 Mois", _prochain_mercredi() + timedelta(days=60))
     yield oeuvre
     _supprimer_film(oeuvre)
@@ -180,9 +170,8 @@ def test_films_a_venir_renvoie_le_synopsis(film_avec_synopsis):
 def test_films_a_venir_exclut_le_film_deja_sorti_si_fenetre_normale_non_vide(
     film_pas_sorti, film_deja_sorti_sans_entrees
 ):
-    """Un vieux film sans entrees n'est exclu que si la fenetre a venir a
-    deja des films par ailleurs (sinon il sert justement de fallback,
-    cf test_films_a_venir_fallback_sur_semaine_precedente_si_fenetre_vide)."""
+    """Le vieux film n'est exclu que si la fenetre a venir a deja des
+    films, sinon c'est lui qui sert de fallback."""
     token = creer_token(mail="cinema@example.com", role="cinema")
     reponse = client.get("/films-a-venir", headers={"Authorization": f"Bearer {token}"})
     assert reponse.status_code == 200
@@ -202,8 +191,7 @@ def test_films_a_venir_exclut_le_film_sans_date(film_sans_date):
 def test_films_a_venir_exclut_un_film_qui_sort_plus_tard_si_fenetre_normale_non_vide(
     film_pas_sorti, film_dans_2_mois
 ):
-    """Quand la fenetre mercredi-samedi a venir a deja des films, on ne
-    va pas chercher plus loin (pas de fallback declenche inutilement)."""
+    """Si la fenetre a deja des films, on ne va pas chercher plus loin."""
     token = creer_token(mail="cinema@example.com", role="cinema")
     reponse = client.get("/films-a-venir", headers={"Authorization": f"Bearer {token}"})
     assert reponse.status_code == 200
@@ -215,15 +203,9 @@ def test_films_a_venir_exclut_un_film_qui_sort_plus_tard_si_fenetre_normale_non_
 def test_films_a_venir_fallback_sur_semaine_precedente_si_fenetre_vide(
     film_deja_sorti_sans_entrees,
 ):
-    """Si personne ne sort dans la fenetre mercredi-samedi a venir (le
-    scraping n8n n'a pas encore rattrape la semaine), pas de page vide : on
-    retombe sur la semaine precedente la plus recente qui a encore des films
-    en attente de vrais resultats (entrees_premiere_semaine toujours NULL).
-    On ne verifie pas que c'est precisement film_deja_sorti_sans_entrees qui
-    ressort (la vraie base de dev peut deja avoir des films plus recents
-    dans le meme cas, ce qui est le comportement voulu : le plus recent
-    gagne) - juste qu'on n'a plus jamais une reponse vide des qu'un film
-    en attente de resultats existe quelque part en base."""
+    """Fenetre vide : on retombe sur la semaine d'avant au lieu de
+    renvoyer une liste vide. On ne verifie pas quel film ressort
+    exactement, la base peut en contenir de plus recents."""
     token = creer_token(mail="cinema@example.com", role="cinema")
     reponse = client.get("/films-a-venir", headers={"Authorization": f"Bearer {token}"})
     assert reponse.status_code == 200
@@ -231,9 +213,7 @@ def test_films_a_venir_fallback_sur_semaine_precedente_si_fenetre_vide(
 
 
 def test_films_a_venir_exclut_un_film_qui_sort_plus_tard_meme_si_fenetre_vide(film_dans_2_mois):
-    """Le fallback ne regarde que vers le passe (semaine precedente), jamais
-    vers un film isole loin dans le futur qui n'a aucun rapport avec ce que
-    l'utilisateur programme cette semaine."""
+    """Le fallback ne regarde que vers le passe, jamais vers le futur."""
     token = creer_token(mail="cinema@example.com", role="cinema")
     reponse = client.get("/films-a-venir", headers={"Authorization": f"Bearer {token}"})
     assert reponse.status_code == 200
@@ -268,10 +248,7 @@ def test_films_a_venir_inclut_le_samedi(film_samedi):
 def test_films_a_venir_exclut_le_dimanche_si_fenetre_normale_non_vide(
     film_pas_sorti, film_dimanche
 ):
-    """Le dimanche n'est deja plus dans la fenetre mercredi-samedi - tant
-    que cette fenetre a par ailleurs des films (sinon le fallback pourrait
-    legitimement remonter le dimanche comme faisant partie de la semaine
-    precedente la plus proche)."""
+    """Le dimanche sort de la fenetre, tant qu'elle a d'autres films."""
     token = creer_token(mail="cinema@example.com", role="cinema")
     reponse = client.get("/films-a-venir", headers={"Authorization": f"Bearer {token}"})
     assert reponse.status_code == 200
@@ -281,8 +258,7 @@ def test_films_a_venir_exclut_le_dimanche_si_fenetre_normale_non_vide(
 
 
 def test_films_a_venir_exclut_le_film_sans_metadata(film_sans_metadata):
-    """Cf le bug des 5 premiers films avec une prediction identique :
-    sans fiche TMDB, pas assez d'infos pour une prediction fiable."""
+    """Sans fiche TMDB on n'a pas assez d'infos, le film est ecarte."""
     token = creer_token(mail="cinema@example.com", role="cinema")
     reponse = client.get("/films-a-venir", headers={"Authorization": f"Bearer {token}"})
     assert reponse.status_code == 200
@@ -291,8 +267,7 @@ def test_films_a_venir_exclut_le_film_sans_metadata(film_sans_metadata):
 
 
 def test_films_a_venir_exclut_une_ressortie(film_ressortie):
-    """Vieux film reprogramme des annees plus tard : pas une vraie
-    nouvelle sortie."""
+    """Une ressortie n'est pas une nouvelle sortie."""
     token = creer_token(mail="cinema@example.com", role="cinema")
     reponse = client.get("/films-a-venir", headers={"Authorization": f"Bearer {token}"})
     assert reponse.status_code == 200

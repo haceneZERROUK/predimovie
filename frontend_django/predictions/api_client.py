@@ -1,13 +1,11 @@
-# Petit client HTTP pour appeler notre backend FastAPI depuis les vues
-# Django. Pas de lib dediee, juste httpx, l'API est petite.
+# Appels au backend FastAPI depuis les vues Django, en httpx
 import httpx
 from django.conf import settings
 
 
 class ErreurAPI(Exception):
-    """Levee quand le backend repond une erreur (mauvais identifiants,
-    token expire, film introuvable...). Le message vient directement du
-    'detail' renvoye par FastAPI."""
+    """Levee quand le backend repond une erreur. Le message reprend le
+    champ 'detail' de la reponse."""
 
 
 def login(mail: str, mot_de_passe: str) -> dict:
@@ -101,8 +99,8 @@ def supprimer_compte(id_compte: int, token: str) -> None:
 
 
 def metriques_brutes(token: str) -> str:
-    """Renvoie le texte brut expose par /metrics (format Prometheus),
-    parse ensuite cote vue pour en tirer quelques chiffres simples."""
+    """Renvoie le texte brut de /metrics, parse ensuite par
+    metrics_parser."""
     reponse = httpx.get(f"{settings.BACKEND_API_URL}/metrics", timeout=10)
     if reponse.status_code != 200:
         raise ErreurAPI("Erreur de recuperation des metriques")

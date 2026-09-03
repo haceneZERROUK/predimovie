@@ -1,6 +1,5 @@
-# Routes reservees a l'admin : voir la base des comptes cinema et en
-# creer de nouveaux. Il n'y a pas d'inscription publique, c'est l'admin
-# qui cree un compte pour chaque cinema client.
+# Routes admin de gestion des comptes cinema. Pas d'inscription publique,
+# c'est l'admin qui cree les comptes.
 from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -27,8 +26,7 @@ def _vers_reponse(compte: Compte) -> CompteReponse:
 
 @router.get("/comptes", response_model=list[CompteReponse])
 def lister_comptes(_utilisateur: dict = Depends(utilisateur_admin)):
-    """Liste les comptes cinema (la base client) : pas les comptes admin,
-    ceux-la restent geres a la main."""
+    """Liste les comptes cinema. Les comptes admin ne sortent pas ici."""
     session = SessionLocal()
     try:
         comptes = session.query(Compte).filter_by(role=RoleCompte.CINEMA).all()
@@ -65,8 +63,8 @@ def creer_compte(
 
 @router.delete("/comptes/{id_compte}", status_code=204)
 def supprimer_compte(id_compte: int, _utilisateur: dict = Depends(utilisateur_admin)):
-    """Supprime un compte cinema. Volontairement limite au role CINEMA :
-    pas moyen de supprimer un compte admin (le sien ou un autre) par ici."""
+    """Supprime un compte cinema. Le filtre sur le role empeche de
+    supprimer un compte admin depuis cette route."""
     session = SessionLocal()
     try:
         compte = (

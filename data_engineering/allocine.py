@@ -1,10 +1,5 @@
-"""
-Scraper pour https://www.allocine.fr : sert a completer la liste des sorties de la
-semaine de JPBOX (jpbox.py), qui ne suit que les grosses sorties avec un vrai suivi
-box-office. AlloCiné liste TOUS les films qui sortent en salle, y compris les petites
-sorties arthouse/distribution limitee que JPBOX ne reference meme pas.
-"""
-
+# Scraping d'allocine.fr, pour completer les sorties trouvees sur JPBOX
+# (JPBOX ne liste que les films avec un suivi box-office)
 import re
 import time
 
@@ -21,8 +16,7 @@ EN_TETES = {"User-Agent": ALLOCINE_USER_AGENT}
 
 
 def _telecharger_page(url: str) -> str:
-    """Télécharge une page AlloCiné et attend un peu avant de continuer,
-    meme politesse que pour JPBOX (voir ALLOCINE_DELAI_ENTRE_REQUETES)."""
+    """Telecharge une page et attend un peu apres, comme pour JPBOX."""
     reponse = httpx.get(url, headers=EN_TETES, timeout=15)
     reponse.raise_for_status()
     time.sleep(ALLOCINE_DELAI_ENTRE_REQUETES)
@@ -30,16 +24,15 @@ def _telecharger_page(url: str) -> str:
 
 
 def films_de_la_semaine(date_sortie) -> list[dict]:
-    """Récupère TOUS les films qui sortent la semaine d'une date donnee
-    (l'agenda AlloCiné est organise par semaine du mercredi)."""
+    """Les films qui sortent la semaine d'une date donnee. L'agenda
+    AlloCine est decoupe par semaine, du mercredi au mardi."""
     url = f"{ALLOCINE_BASE_URL}/film/agenda/sem-{date_sortie.isoformat()}/"
     html = _telecharger_page(url)
     return extraire_films_de_la_semaine(html)
 
 
 def extraire_films_de_la_semaine(html: str) -> list[dict]:
-    """Parse le HTML de la page agenda AlloCiné.
-    Separe de films_de_la_semaine() pour pouvoir etre teste sans reseau."""
+    """Parse le HTML de la page agenda. A part pour les tests."""
     soup = BeautifulSoup(html, "lxml")
 
     films = []

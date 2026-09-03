@@ -1,5 +1,4 @@
-# Tests du scraper JPBOX : on utilise de vraies pages sauvegardées
-# (fixtures/) pour ne pas dépendre du réseau ni du site en direct.
+# Tests du scraper JPBOX, sur de vraies pages sauvegardees dans fixtures/
 from pathlib import Path
 
 from data_engineering.jpbox import (
@@ -27,8 +26,8 @@ def test_extraire_classement_renvoie_des_films():
 
 
 def test_extraire_classement_gere_les_films_sans_fiche():
-    """Certaines lignes JPBOX n'ont pas de lien vers une fiche film :
-    le parseur ne doit pas planter, juste renvoyer un id_jpbox à None."""
+    """Sans lien vers la fiche, le parseur ne doit pas planter et juste
+    renvoyer id_jpbox a None."""
     html = _lire_fixture("jpbox_classement_semaine.html")
     films = extraire_classement(html)
 
@@ -46,8 +45,8 @@ def test_extraire_films_du_calendrier():
 
 
 def test_extraire_films_du_calendrier_pas_de_doublons():
-    """Un meme film peut avoir plusieurs liens sur la page (affiche +
-    titre) : on ne doit le garder qu'une fois."""
+    """Un film a souvent 2 liens sur la page (l'affiche et le titre),
+    on ne doit le garder qu'une fois."""
     html = _lire_fixture("jpbox_calendrier.html")
     films = extraire_films_du_calendrier(html)
 
@@ -56,8 +55,7 @@ def test_extraire_films_du_calendrier_pas_de_doublons():
 
 
 def test_extraire_nb_salles_semaine1_renvoie_la_premiere_ligne():
-    """La fiche film liste une ligne par semaine ecoulee : on ne veut que
-    la toute premiere (semaine 1), pas une semaine plus tardive."""
+    """La fiche a une ligne par semaine, on ne veut que la premiere."""
     html = _lire_fixture("jpbox_fiche_film_semaines.html")
     nb_salles = extraire_nb_salles_semaine1(html)
 
@@ -65,6 +63,5 @@ def test_extraire_nb_salles_semaine1_renvoie_la_premiere_ligne():
 
 
 def test_extraire_nb_salles_semaine1_renvoie_none_si_pas_de_tableau():
-    """Un film pas encore sorti n'a pas de tableau de semaines du tout :
-    le parseur ne doit pas planter, juste renvoyer None."""
+    """Un film pas encore sorti n'a pas de tableau, on renvoie None."""
     assert extraire_nb_salles_semaine1("<html><body>rien ici</body></html>") is None

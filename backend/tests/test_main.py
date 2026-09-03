@@ -1,5 +1,5 @@
-# Verifie que le middleware d'en-tetes de securite (backend/main.py)
-# s'applique bien a toutes les reponses, pas juste a une route en particulier.
+# Verifie que le middleware d'en-tetes de securite s'applique sur toutes
+# les routes et pas juste une
 from fastapi.testclient import TestClient
 
 from backend.main import app

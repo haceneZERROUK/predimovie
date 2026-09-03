@@ -1,5 +1,4 @@
-# Test de _parser_reponse_llm() : pas besoin de reseau, on lui donne
-# directement une reponse Claude factice.
+# Test de _parser_reponse_llm avec une fausse reponse, pas de reseau
 from data_engineering.mots_cles import _parser_reponse_llm
 
 

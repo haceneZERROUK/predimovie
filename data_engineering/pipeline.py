@@ -1,7 +1,4 @@
-# Ce module fait le lien entre JPBOX, AlloCiné et TMDB : il récupère les
-# infos des différentes sources, vérifie qu'elles parlent bien du même
-# film, puis enregistre le tout dans la base de données (via les modèles
-# SQLAlchemy).
+# Recupere les films sur JPBOX / AlloCine / TMDB et les enregistre en base
 from datetime import date, timedelta
 
 from sqlalchemy.orm import Session
@@ -23,7 +20,7 @@ from database.models import (
 
 
 def _get_ou_creer_nature(session: Session, nom: str) -> Nature:
-    """Retourne la Nature existante, ou la crée si elle n'existe pas encore."""
+    """Retourne la nature si elle existe deja, sinon la cree."""
     nature = session.query(Nature).filter_by(nom_nature=nom).first()
     if nature is None:
         nature = Nature(nom_nature=nom)
@@ -51,8 +48,7 @@ def _get_ou_creer_production(session: Session, nom_societe: str) -> Production:
 
 
 def _decouper_nom(nom_complet: str) -> tuple[str, str]:
-    """Sépare 'Prénom Nom' en (prenom, nom). Simplification : ne gère pas
-    bien les prénoms/noms composés, mais suffisant pour ce projet."""
+    """Coupe 'Prenom Nom' en deux au premier espace."""
     prenom, _, nom = nom_complet.partition(" ")
     return prenom, nom or prenom
 
@@ -78,11 +74,8 @@ def _get_ou_creer_realisateur(session: Session, nom_complet: str) -> Realisateur
 
 
 def enrichir_avec_tmdb(titre: str, annee: int | None) -> dict | None:
-    """Cherche un film sur TMDB et récupère ses infos (synopsis, genres,
-    casting, réalisateur). Retourne None si aucun film ne correspond vraiment.
-
-    On regarde tous les résultats TMDB, pas que le premier : pour un titre
-    générique (ex: "Who"), le bon film n'est pas toujours en tête."""
+    """Cherche le film sur TMDB et renvoie ses infos (synopsis, genres,
+    casting...). None si aucun resultat ne correspond."""
     titre_recherche = nettoyer_annotations(titre)
     resultat = next(
         (
@@ -99,11 +92,7 @@ def enrichir_avec_tmdb(titre: str, annee: int | None) -> dict | None:
     casting = tmdb.get_casting_film(resultat["id"])
     realisateurs = [p["name"] for p in casting.get("crew", []) if p.get("job") == "Director"]
 
-    # Le champ "release_date" de get_details_film() n'est pas forcement la
-    # date francaise (souvent la date US, ex: Avengers Doomsday 18/12 aux
-    # USA contre 16/12 en France) : on va chercher la vraie date FR via
-    # release_dates, et on ne retombe sur "release_date" que si TMDB n'a
-    # pas encore de date FR pour ce film (cas des sorties tres lointaines).
+    # on prend la date de sortie France, et release_date si TMDB n'en a pas
     dates_par_pays = tmdb.get_dates_sortie_par_pays(resultat["id"])
     texte_date_sortie = tmdb.date_sortie_france(dates_par_pays) or details.get("release_date") or ""
     date_sortie_tmdb = date.fromisoformat(texte_date_sortie) if texte_date_sortie else None
@@ -117,13 +106,11 @@ def enrichir_avec_tmdb(titre: str, annee: int | None) -> dict | None:
         "synopsis": details.get("overview"),
         "note_tmdb": details.get("vote_average"),
         "langue_originale": details.get("original_language"),
-        # budget en dollars US. TMDB renvoie souvent 0 quand il ne connait
-        # pas le chiffre (surtout sur les petites productions) : on stocke
-        # None plutot que 0 pour ne pas confondre "inconnu" et "vrai 0"
+        # budget en dollars, None quand TMDB renvoie 0 (= inconnu)
         "budget": details.get("budget") or None,
         "genres": [g["name"] for g in details.get("genres", [])],
         "productions": [p["name"] for p in details.get("production_companies", [])],
-        # on ne garde que les 10 premiers acteurs, pas tout le casting
+        # que les 10 premiers acteurs
         "acteurs": [
             {"nom": p["name"], "role": p.get("character")} for p in casting.get("cast", [])[:10]
         ],
@@ -141,13 +128,8 @@ def sauvegarder_film(
     notes_imdb: dict | None = None,
     id_allocine: int | None = None,
 ) -> Oeuvre:
-    """Crée le film en base s'il n'existe pas encore (grâce à id_jpbox ou
-    id_allocine), sinon récupère la ligne déjà existante et la complète.
-
-    On ne retrouve plus une oeuvre existante via id_tmdb : plusieurs lignes
-    peuvent légitimement partager le même id_tmdb (une reprise en salle a
-    son propre id_jpbox et sa propre entrees_premiere_semaine, mais c'est
-    le même film sur TMDB), donc id_tmdb n'identifie plus une ligne unique."""
+    """Cherche le film par id_jpbox puis id_allocine. S'il n'existe pas on
+    le cree, et dans les deux cas on le complete avec les infos TMDB."""
     oeuvre = None
     if id_jpbox is not None:
         oeuvre = session.query(Oeuvre).filter_by(id_jpbox=id_jpbox).first()
@@ -176,8 +158,8 @@ def _enrichir_oeuvre(
     infos_tmdb: dict | None,
     notes_imdb: dict | None = None,
 ) -> Oeuvre:
-    """Complète une oeuvre déjà identifiée (existante ou tout juste créée)
-    avec ses infos TMDB : synopsis, notes, genres, casting, réalisateurs."""
+    """Remplit une oeuvre avec ses infos TMDB : synopsis, notes, genres,
+    productions, acteurs et realisateurs."""
     if infos_tmdb is not None:
         oeuvre.id_tmdb = infos_tmdb["id_tmdb"]
         oeuvre.synopsis = infos_tmdb["synopsis"]
@@ -190,10 +172,8 @@ def _enrichir_oeuvre(
         if notes_imdb and infos_tmdb.get("imdb_id"):
             oeuvre.note_imdb = notes_imdb.get(infos_tmdb["imdb_id"])
 
-        # Pour chaque lien (genre, acteur...), on vérifie en base s'il existe
-        # déjà avant de l'ajouter, puis on flush tout de suite : ça évite les
-        # doublons même si TMDB renvoie 2 fois le même nom pour un film, ou
-        # si ce film a déjà été enrichi lors d'un passage précédent.
+        # on verifie que le lien n'existe pas deja avant de l'ajouter,
+        # sinon on se retrouve avec des doublons
         for nom_genre in infos_tmdb["genres"]:
             genre = _get_ou_creer_genre(session, nom_genre)
             deja_liee = (
@@ -247,8 +227,8 @@ def _enrichir_oeuvre(
 
 
 def prochain_mercredi(depuis: date | None = None) -> date:
-    """Renvoie la date du mercredi qui arrive (les films sortent le
-    mercredi en France). Si on est deja mercredi, renvoie aujourd'hui."""
+    """Date du prochain mercredi (jour des sorties en France).
+    Renvoie aujourd'hui si on est deja mercredi."""
     depuis = depuis or date.today()
     jours_a_ajouter = (2 - depuis.weekday()) % 7  # lundi=0 ... mercredi=2
     return depuis + timedelta(days=jours_a_ajouter)
@@ -257,20 +237,16 @@ def prochain_mercredi(depuis: date | None = None) -> date:
 def traiter_films_a_venir(
     session: Session, notes_imdb: dict | None = None, date_sortie: date | None = None
 ) -> int:
-    """Flux A : scrape TOUS les films qui sortent un mercredi donne
-    (par defaut le prochain), et les enregistre avec leurs infos TMDB.
-
-    2 sources combinees : JPBOX (calendrier des sorties) ne suit que les
-    grosses sorties avec un vrai suivi box-office. AlloCine complete avec
-    les petites sorties arthouse/distribution limitee que JPBOX ne
-    reference meme pas. Retourne le nombre de films traites."""
+    """Flux A : scrape les films qui sortent un mercredi donne (le prochain
+    par defaut) sur JPBOX puis sur AlloCine, et les met en base avec leurs
+    infos TMDB. Renvoie le nombre de films traites."""
     if notes_imdb is None:
         notes_imdb = imdb.telecharger_notes_imdb()
     if date_sortie is None:
         date_sortie = prochain_mercredi()
 
     nb_films = 0
-    titres_traites = []  # [(titre, oeuvre)] pour eviter les doublons avec AlloCine
+    titres_traites = []  # (titre, oeuvre) deja vus, pour la boucle AlloCine
 
     for film in jpbox.films_du_calendrier(date_sortie):
         infos_tmdb = enrichir_avec_tmdb(film["titre_francais"], film["annee_sortie"])
@@ -283,17 +259,14 @@ def traiter_films_a_venir(
             infos_tmdb=infos_tmdb,
             notes_imdb=notes_imdb,
         )
-        # date_sortie ecrase toujours ce que TMDB a mis : pour une reprise
-        # en salle (ex: retrospective, rediffusion), TMDB ne connait que la
-        # date de sortie ORIGINALE du film, pas celle de cette reprise-la.
-        # La date qu'on vient de demander (celle de JPBOX) est la bonne.
+        # on ecrase la date TMDB par celle qu'on a demandee : pour une
+        # reprise en salle TMDB donne la date de sortie d'origine
         oeuvre.date_sortie = date_sortie
         titres_traites.append((film["titre_francais"], oeuvre))
         nb_films += 1
 
     for film in allocine.films_de_la_semaine(date_sortie):
-        # le meme film peut deja avoir ete trouve via JPBOX : dans ce cas
-        # on rattache juste id_allocine, pas de nouvelle ligne
+        # si le film est deja passe par JPBOX on ajoute juste son id_allocine
         deja_traite = next(
             (o for titre, o in titres_traites if se_ressemblent(titre, film["titre_francais"])),
             None,
@@ -313,7 +286,7 @@ def traiter_films_a_venir(
             infos_tmdb=infos_tmdb,
             notes_imdb=notes_imdb,
         )
-        oeuvre.date_sortie = date_sortie  # meme raison : cf. le bloc JPBOX ci-dessus
+        oeuvre.date_sortie = date_sortie  # pareil que plus haut
         titres_traites.append((film["titre_francais"], oeuvre))
         nb_films += 1
 
@@ -324,16 +297,16 @@ def traiter_films_a_venir(
 def traiter_entrees_semaine(
     session: Session, idsem: int, vue: int, notes_imdb: dict | None = None
 ) -> int:
-    """Flux B : scrape le classement hebdomadaire et enregistre
-    entrees_premiere_semaine pour les films qui sortent tout juste
-    (semaine_exploitation == 1). Retourne le nombre de films mis à jour."""
+    """Flux B : scrape le classement d'une semaine et enregistre
+    entrees_premiere_semaine pour les films qui en sont a leur 1ere
+    semaine. Renvoie le nombre de films mis a jour."""
     if notes_imdb is None:
         notes_imdb = imdb.telecharger_notes_imdb()
 
     nb_maj = 0
     for film in jpbox.classement_hebdo(idsem, vue):
         if film["semaine_exploitation"] != 1:
-            continue  # on ne garde que la toute première semaine d'exploitation
+            continue  # que la 1ere semaine
 
         infos_tmdb = enrichir_avec_tmdb(film["titre_francais"], film["annee_sortie"])
         oeuvre = sauvegarder_film(
@@ -346,10 +319,7 @@ def traiter_entrees_semaine(
             notes_imdb=notes_imdb,
         )
         oeuvre.entrees_premiere_semaine = film["entrees_semaine"]
-        # nombre de salles de la premiere semaine : meme source (fiche
-        # film, onglet "Resultats France") que le backfill historique, pour
-        # rester coherent. 1 requete de plus par film, negligeable au
-        # rythme hebdomadaire (quelques dizaines de films).
+        # une requete de plus par film pour aller chercher le nb de salles
         if film["id_jpbox"] is not None:
             oeuvre.nb_salles_semaine1 = jpbox.nb_salles_premiere_semaine(film["id_jpbox"])
         nb_maj += 1
@@ -359,10 +329,8 @@ def traiter_entrees_semaine(
 
 
 def reessayer_matching_tmdb(session: Session, notes_imdb: dict | None = None) -> int:
-    """Retente l'enrichissement TMDB des films qui n'ont pas encore de
-    id_tmdb (échec de matching lors d'un passage précédent, ex: titre
-    générique noyé dans les résultats, ou annotation JPBOX du style
-    "(Rep. 2026)"). Retourne le nombre de films corrigés."""
+    """Retente le matching TMDB sur les films qui n'ont pas d'id_tmdb.
+    Renvoie le nombre de films rattrapes."""
     if notes_imdb is None:
         notes_imdb = imdb.telecharger_notes_imdb()
 
@@ -371,9 +339,8 @@ def reessayer_matching_tmdb(session: Session, notes_imdb: dict | None = None) ->
         infos_tmdb = enrichir_avec_tmdb(oeuvre.nom_francais, oeuvre.annee_sortie)
         if infos_tmdb is None:
             continue
-        # On enrichit directement la ligne déjà chargée (pas via
-        # sauvegarder_film) : quand id_jpbox est None, sauvegarder_film ne
-        # pourrait pas la retrouver et créerait un doublon.
+        # on passe directement par _enrichir_oeuvre, sinon sauvegarder_film
+        # ne retrouve pas la ligne (pas d'id_jpbox) et en cree une autre
         _enrichir_oeuvre(session, oeuvre, infos_tmdb, notes_imdb)
         nb_corriges += 1
 
@@ -384,10 +351,10 @@ def reessayer_matching_tmdb(session: Session, notes_imdb: dict | None = None) ->
 def backfill(
     session: Session, idsem_debut: int, idsem_fin: int, vue: int, notes_imdb: dict | None = None
 ) -> int:
-    """Rattrapage historique : rejoue traiter_entrees_semaine sur une
-    plage de semaines passées, pour avoir assez de données d'entraînement."""
+    """Rejoue traiter_entrees_semaine sur une plage de semaines passees,
+    pour recuperer l'historique."""
     if notes_imdb is None:
-        notes_imdb = imdb.telecharger_notes_imdb()  # une seule fois pour tout le backfill
+        notes_imdb = imdb.telecharger_notes_imdb()  # une seule fois pour toute la plage
     total = 0
     for idsem in range(idsem_debut, idsem_fin + 1):
         total += traiter_entrees_semaine(session, idsem, vue, notes_imdb=notes_imdb)

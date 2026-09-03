@@ -7,13 +7,8 @@ from database.base import Base
 
 
 class Oeuvre(Base):
-    """Un film (ou une série) : la table centrale du projet.
-
-    Toutes les autres tables (genre, acteur, réalisateur, production)
-    servent à décrire une Oeuvre. C'est à partir de ces informations que
-    le modèle de Machine Learning apprendra à prédire
-    `entrees_premiere_semaine`.
-    """
+    """Un film. C'est la table centrale, toutes les autres (genre, acteur,
+    realisateur, production) la decrivent."""
 
     __tablename__ = "oeuvre"
 
@@ -22,67 +17,40 @@ class Oeuvre(Base):
     nom_original: Mapped[str] = mapped_column(String(255), nullable=True)
     synopsis: Mapped[str] = mapped_column(Text, nullable=True)
     annee_sortie: Mapped[int] = mapped_column(Integer, nullable=True)
-    # Date de sortie complete (jour/mois/annee), recuperee depuis TMDB
-    # (champ release_date). Avant, seule l'annee etait gardee : impossible
-    # de savoir quel film sort quel mercredi. nullable=True pour les films
-    # deja en base avant l'ajout de cette colonne (pas encore rattrapes).
+    # date complete, pour savoir quel film sort quel mercredi
     date_sortie: Mapped[date] = mapped_column(Date, nullable=True)
-    # Note communautaire TMDB (sur 10), récupérée avec le reste des infos TMDB.
+    # note TMDB sur 10
     note_tmdb: Mapped[float] = mapped_column(Float, nullable=True)
-    # Note IMDb (sur 10), récupérée via le fichier officiel IMDb (imdb.py).
+    # note IMDb sur 10
     note_imdb: Mapped[float] = mapped_column(Float, nullable=True)
-    # Les 3 mots-clés extraits automatiquement du synopsis par l'agent IA
-    # branché sur le pipeline N8n (un mot-clé par colonne, pas de liste).
+    # les 3 mots-cles tires du synopsis, un par colonne
     mot_cle_1: Mapped[str] = mapped_column(String(100), nullable=True)
     mot_cle_2: Mapped[str] = mapped_column(String(100), nullable=True)
     mot_cle_3: Mapped[str] = mapped_column(String(100), nullable=True)
-    # Nombre d'entrées en salle sur la première semaine d'exploitation.
-    # C'est la valeur que le modèle de prédiction doit apprendre à estimer
-    # (la "cible"/"target" en Machine Learning) à partir des autres colonnes
-    # et des tables liées (genres, acteurs, réalisateurs, production).
-    # Elle est `nullable=True` car un film pas encore sorti n'a pas encore
-    # de valeur réelle : c'est justement ce qu'on veut prédire pour lui.
+    # la cible du modele. nullable parce qu'un film pas encore sorti n'a
+    # pas encore d'entrees, c'est justement ce qu'on veut predire
     entrees_premiere_semaine: Mapped[int] = mapped_column(Integer, nullable=True)
-    # Identifiants externes : ils servent à retrouver un film déjà enregistré
-    # au lieu d'en recréer un doublon à chaque passage du scraper.
-    # id_jpbox et id_allocine sont chacun une clé d'identité par ligne (l'un
-    # ou l'autre selon la source qui a trouvé le film en premier) : une
-    # reprise en salle (ex: "Kill Bill (Rep. 2004)") a son propre id_jpbox
-    # et sa propre entrees_premiere_semaine, mais partage le même id_tmdb
-    # que la sortie initiale du même film — donc id_tmdb n'est volontairement
-    # pas unique.
+    # ids externes, pour retrouver un film deja en base au lieu d'en creer
+    # un doublon a chaque passage du scraper. id_tmdb n'est pas unique :
+    # une reprise en salle a son propre id_jpbox mais le meme id_tmdb que
+    # la sortie d'origine.
     id_jpbox: Mapped[int] = mapped_column(Integer, nullable=True, unique=True)
-    # AlloCiné complète JPBOX avec les petites sorties (arthouse,
-    # distribution limitée) que JPBOX ne référence même pas.
     id_allocine: Mapped[int] = mapped_column(Integer, nullable=True, unique=True)
     id_tmdb: Mapped[int] = mapped_column(Integer, nullable=True)
-    # Langue originale du film, code ISO 639-1 (ex: "fr", "en"), tel que
-    # renvoye par TMDB (original_language). Sert a ponderer plus fort les
-    # succes francais pendant l'entrainement (cf ml/train.py) - les petits
-    # cinemas independants du projet misent surtout sur le cinema francais.
+    # code langue ISO 639-1 ("fr", "en"...), sert au sample_weight
     langue_originale: Mapped[str] = mapped_column(String(10), nullable=True)
-    # Budget du film (en dollars US), tel que renvoye par TMDB. Souvent a
-    # 0/NULL sur les petites productions (TMDB ne connait pas le chiffre,
-    # pas forcement un vrai budget nul) - a traiter comme donnee manquante.
+    # budget en dollars. Souvent 0 ou NULL quand TMDB ne le connait pas,
+    # a traiter comme une donnee manquante.
     budget: Mapped[int] = mapped_column(Integer, nullable=True)
-    # Nombre de salles lors de la premiere semaine d'exploitation (JPBOX,
-    # colonne "Salles" du tableau hebdomadaire par film). Sert a entrainer
-    # un sous-modele qui PREDIT ce nombre pour un film pas encore sorti
-    # (cf ml/salles.py) - la vraie valeur n'est connue qu'apres coup, donc
-    # jamais utilisable telle quelle pour predire un film a venir.
+    # vrai nombre de salles en 1ere semaine, connu seulement apres la
+    # sortie : sert a entrainer le sous-modele salles
     nb_salles_semaine1: Mapped[int] = mapped_column(Integer, nullable=True)
-    # Prediction du sous-modele "salles" (ml/salles.py), calculee une fois
-    # hors-ligne pour tous les films a partir de features connues avant la
-    # sortie (budget, genre, casting...). Contrairement a
-    # nb_salles_semaine1 (la vraie valeur, connue seulement apres coup),
-    # celle-ci EST utilisable pour predire un film pas encore sorti - c'est
-    # elle qui sert de feature au modele principal (ml/train.py).
+    # ce que le sous-modele predit, utilisable avant la sortie lui
     nb_salles_predites: Mapped[float] = mapped_column(Float, nullable=True)
     id_nature: Mapped[int] = mapped_column(ForeignKey("nature.id_nature"), nullable=False)
 
-    # Chaque relationship() ci-dessous correspond à une des tables
-    # d'association (genre_oeuvre, acteur_oeuvre, ...) : elles permettent
-    # de naviguer en Python (ex: `oeuvre.genres_assoc`) sans écrire de SQL.
+    # les relations vers les tables d'association, pour naviguer en Python
+    # (oeuvre.genres_assoc, etc.) sans ecrire de SQL
     nature: Mapped["Nature"] = relationship(back_populates="oeuvres")  # noqa: F821
     genres_assoc: Mapped[list["GenreOeuvre"]] = relationship(back_populates="oeuvre")  # noqa: F821
     acteurs_assoc: Mapped[list["ActeurOeuvre"]] = relationship(  # noqa: F821

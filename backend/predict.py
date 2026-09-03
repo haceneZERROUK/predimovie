@@ -1,6 +1,4 @@
-# Route de prediction : utilise le modele deja charge dans
-# moteur_prediction.py pour predire les entrees d'un film deja en base
-# (typiquement un film pas encore sorti, scrape par le flux A).
+# Route /predict : predit les entrees d'un film deja present en base
 from fastapi import APIRouter, Depends, HTTPException
 
 from backend.auth import utilisateur_connecte

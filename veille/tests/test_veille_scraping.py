@@ -1,7 +1,5 @@
-# Fixture = extrait reel de blog.apify.com (2 articles hors-sujet pris sur
-# la home, 2 articles sur le scraping pris sur la page de tag
-# "anti-blocking"), sauvegarde pour ne pas dependre du reseau ni du site
-# en direct - meme logique que data_engineering/tests/test_allocine.py.
+# La fixture est un vrai bout de HTML du blog Apify (2 articles hors sujet
+# et 2 sur le scraping), garde en dur pour ne pas dependre du reseau.
 from pathlib import Path
 
 from veille.veille_scraping import (
@@ -43,7 +41,7 @@ def test_est_article_sur_le_scraping_detecte_via_le_titre():
 
 
 def test_est_article_sur_le_scraping_detecte_via_un_tag_slug():
-    # "Anti-blocking" (tiret) doit matcher "anti blocking" (espace) dans MOTS_CLES_SCRAPING
+    # "Anti-blocking" avec un tiret doit matcher "anti blocking"
     article = {"titre": "Un titre neutre", "extrait": "", "tags": ["Anti-blocking"]}
     assert est_article_sur_le_scraping(article) is True
 

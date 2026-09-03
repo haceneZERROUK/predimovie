@@ -1,5 +1,5 @@
-# Tests du hachage de mot de passe et des tokens JWT. Pas besoin de
-# postgres ni de FastAPI pour ces tests-la, juste backend/security.py.
+# Tests du hachage des mots de passe et des tokens JWT. Ni postgres ni
+# FastAPI la-dedans.
 from datetime import UTC, datetime, timedelta
 
 import jwt
@@ -37,8 +37,8 @@ def test_decoder_token_invalide_leve_une_erreur():
 
 
 def test_decoder_token_expire_leve_une_erreur():
-    # on fabrique directement un token deja expire (date d'expiration
-    # dans le passe), pour verifier que l'expiration est bien controlee
+    # on fabrique un token deja expire pour verifier que c'est bien
+    # controle au decodage
     payload = {
         "sub": "cinema@example.com",
         "role": "cinema",

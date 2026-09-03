@@ -1,9 +1,6 @@
-# Le modele et ses artefacts sont recharges automatiquement quand le
-# fichier modele_champion.joblib change sur disque (cf _charger_modele_
-# si_necessaire) - necessaire depuis que le reentrainement mensuel
-# (backend/reentrainement.py) peut le remplacer sans redemarrer l'API.
-# predict.py et predictions_admin.py (relance hebdomadaire) passent tous
-# les deux par predire() pour ne pas dupliquer ce chargement.
+# Chargement du modele et prediction. Le modele est recharge tout seul
+# quand le fichier .joblib change, comme ca le reentrainement mensuel n'a
+# pas besoin de redemarrer l'API.
 from pathlib import Path
 
 import joblib
@@ -17,9 +14,8 @@ _modele = None
 _artefacts = None
 _derniere_maj_modele = None
 
-# compte chaque appel reel au modele, contrairement au nombre de requetes
-# HTTP (http_requests_total) qui ne dit pas combien de films ont ete
-# predits en une seule requete /predictions/relancer
+# compte les appels au modele, et pas les requetes HTTP : une seule
+# requete /predictions/relancer peut predire des dizaines de films
 predictions_modele_total = Counter(
     "predictions_modele_total",
     "Nombre de fois ou le modele de ML a ete invoque pour predire un film",
@@ -27,11 +23,8 @@ predictions_modele_total = Counter(
 
 
 def _charger_modele_si_necessaire() -> None:
-    """Charge le modele au premier appel, puis le recharge uniquement si
-    modele_champion.joblib a change depuis le dernier chargement (date de
-    modification du fichier). Le garde-fou de ml/train.py (doit_remplacer_
-    champion) est ce qui garantit qu'un modele degrade n'arrive jamais
-    jusqu'ici - ce n'est plus un redemarrage manquant qui protege la prod."""
+    """Charge le modele au premier appel, puis seulement si le fichier a
+    change depuis (on regarde sa date de modification)."""
     global _modele, _artefacts, _derniere_maj_modele
     maj = Path(CHEMIN_MODELE).stat().st_mtime
     if _modele is None or maj != _derniere_maj_modele:
@@ -41,9 +34,8 @@ def _charger_modele_si_necessaire() -> None:
 
 
 def predire(id_oeuvre: int) -> int:
-    """Renvoie le nombre d'entrees premiere semaine predit pour ce film.
-    Leve ValueError si le film n'existe pas (remonte depuis construire_
-    features_pour_predire)."""
+    """Renvoie les entrees de 1ere semaine predites pour ce film.
+    Leve ValueError si le film n'existe pas."""
     _charger_modele_si_necessaire()
     X = construire_features_pour_predire(id_oeuvre, _artefacts)
     prediction_log = _modele.predict(X)

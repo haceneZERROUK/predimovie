@@ -1,17 +1,8 @@
-# Route qui liste les films de la prochaine semaine de sortie en salle -
-# mercredi a venir jusqu'au samedi qui suit inclus (4 jours), pas n'importe
-# quel film "dans le futur" : la plupart des sorties sont le mercredi en
-# France, mais certaines (avant-premieres, sorties limitees) tombent le
-# jeudi/vendredi/samedi de la meme semaine - cf audit de la base.
-#
-# Si cette fenetre precise est vide (le pipeline de scraping n8n n'a pas
-# encore rattrape la semaine en cours - tourne le lundi), on retombe sur la
-# semaine PRECEDENTE plutot que de renvoyer une page vide : ces films-la sont
-# deja sortis mais leurs vraies entrees n'ont pas encore ete remontees
-# (entrees_premiere_semaine toujours NULL), donc encore legitimement "a
-# prevoir" en attendant le prochain passage du pipeline. Mieux vaut ca qu'un
-# film isole a plusieurs semaines de la, qui n'a aucun rapport avec ce que
-# l'utilisateur programme cette semaine.
+# Liste les films de la prochaine semaine de sortie : du mercredi au
+# samedi. La plupart des films sortent le mercredi mais quelques uns
+# (avant-premieres, sorties limitees) tombent le reste de la semaine.
+# Si la fenetre est vide parce que le scraping n'est pas encore passe, on
+# retombe sur la semaine d'avant au lieu de renvoyer une page vide.
 from datetime import date, timedelta
 
 from fastapi import APIRouter, Depends
@@ -24,40 +15,33 @@ from database.models import Oeuvre
 
 router = APIRouter()
 
-# largeur de la fenetre d'une semaine de sortie : mercredi + 3 jours =
-# mercredi, jeudi, vendredi, samedi inclus (dimanche exclu, deja la semaine
-# suivante commerciale au cinema)
+# mercredi + 3 jours, donc jusqu'au samedi inclus
 LARGEUR_FENETRE = timedelta(days=3)
 
 
 def _prochain_mercredi() -> date:
-    """Meme calcul que data_engineering/pipeline.py : duplique ici plutot
-    que partage, pour ne pas faire dependre le backend du scraper (2
-    services separes, chacun avec son propre Dockerfile)."""
+    """Date du prochain mercredi. Recopie du scraper, pour ne pas rendre
+    le backend dependant de data_engineering."""
     aujourdhui = date.today()
     jours_a_ajouter = (2 - aujourdhui.weekday()) % 7  # lundi=0 ... mercredi=2
     return aujourdhui + timedelta(days=jours_a_ajouter)
 
 
 def _mercredi_de_la_semaine(jour: date) -> date:
-    """Ramene une date quelconque au mercredi de sa semaine (utilise pour
-    ancrer la fenetre de fallback sur la bonne semaine, quel que soit le
-    jour exact du dernier film trouve)."""
+    """Ramene une date au mercredi de sa semaine."""
     return jour - timedelta(days=(jour.weekday() - 2) % 7)
 
 
 def _filtres_film_predictible(session):
-    """Filtres communs : pas encore sorti, fiche TMDB complete, pas une
-    ressortie. Reutilises pour la fenetre normale et pour le fallback."""
+    """Filtres communs aux deux requetes : entrees pas encore connues,
+    fiche TMDB presente, et pas une ressortie."""
     return (
         Oeuvre.entrees_premiere_semaine.is_(None),
-        # pas de fiche TMDB = pas de casting/genre/notes = pas assez
-        # d'infos pour une prediction fiable (juste des valeurs par
-        # defaut identiques pour tous ces films)
+        # sans fiche TMDB on n'a ni casting ni genre, la prediction ne
+        # vaudrait rien
         Oeuvre.id_tmdb.isnot(None),
-        # ressorties en salle (ex: un vieux film reprogramme des
-        # annees plus tard) : meme seuil +-1 an que le matching
-        # TMDB dans data_engineering/matching.py
+        # on ecarte les ressorties, avec le meme ecart d'1 an que le
+        # matching TMDB
         or_(
             Oeuvre.annee_sortie.is_(None),
             extract("year", Oeuvre.date_sortie) - Oeuvre.annee_sortie <= 1,
@@ -79,13 +63,9 @@ def films_a_venir(_utilisateur: dict = Depends(utilisateur_connecte)):
         )
 
         if not films:
-            # rien pour la fenetre mercredi-samedi la plus proche (n8n pas
-            # encore passe) : on retombe sur la semaine precedente la plus
-            # recente qui a encore des films en attente de vrais resultats.
-            # ancre sur le mercredi de cette semaine-la (pas juste "-3 jours"
-            # depuis la derniere date trouvee) pour retomber sur la meme
-            # fenetre mercredi-samedi que la recherche normale, meme si le
-            # dernier film trouve n'est pas lui-meme un mercredi.
+            # rien sur la fenetre en cours : on prend la derniere semaine
+            # qui a encore des films sans resultats. On repart du mercredi
+            # de cette semaine-la pour avoir la meme fenetre qu'au-dessus.
             derniere_date = (
                 session.query(func.max(Oeuvre.date_sortie))
                 .filter(Oeuvre.date_sortie < mercredi, *filtres)

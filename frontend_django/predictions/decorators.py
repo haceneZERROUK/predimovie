@@ -1,7 +1,6 @@
-# Decorateurs maison pour proteger les vues. On ne se sert pas du systeme
-# d'auth Django (django.contrib.auth) : les comptes vivent dans la table
-# `compte` cote backend FastAPI, pas dans la base sqlite de Django. Le
-# token JWT recu au login est juste garde dans la session Django.
+# Decorateurs pour proteger les vues. On n'utilise pas django.contrib.auth
+# vu que les comptes sont dans la base du backend : on garde juste le token
+# JWT dans la session Django.
 from functools import wraps
 
 from django.contrib import messages

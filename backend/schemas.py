@@ -37,8 +37,7 @@ class RelanceReponse(BaseModel):
 
 class HistoriquePrediction(BaseModel):
     nom_francais: str
-    # nullable : certains films sortis n'ont jamais eu de prediction
-    # stockee avant leur sortie (personne n'a clique "Relancer" a temps)
+    # nullable : des films sont sortis sans qu'on ait stocke de prediction
     entrees_premiere_semaine_predites: int | None
     entrees_premiere_semaine_reelles: int
     date_prediction: datetime | None
@@ -47,8 +46,8 @@ class HistoriquePrediction(BaseModel):
 
 class HistoriqueReponse(BaseModel):
     predictions: list[HistoriquePrediction]
-    # les sorties (dates de mercredi) qui ont de l'historique, pour le
-    # menu deroulant du front - la plus recente en premier
+    # les semaines qui ont de l'historique, pour le menu deroulant du
+    # front, la plus recente en premier
     semaines_disponibles: list[date]
 
 

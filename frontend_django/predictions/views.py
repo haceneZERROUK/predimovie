@@ -21,8 +21,7 @@ from predictions.metrics_parser import parser_metriques
 
 
 def landing_view(request):
-    """Page publique (pas besoin d'etre connecte) : presente le produit
-    avant d'inviter a se connecter."""
+    """Page d'accueil publique, accessible sans etre connecte."""
     return render(request, "predictions/landing.html")
 
 
@@ -40,9 +39,8 @@ def login_view(request):
             return render(request, "predictions/login.html")
 
         token = resultat["access_token"]
-        # le role n'est pas dans la reponse de /auth/login, il est encode
-        # dans le token lui-meme : on le lit juste pour l'affichage, la
-        # verification de securite se fait cote backend a chaque appel.
+        # le role est dans le token, pas dans la reponse. On le lit juste
+        # pour l'affichage, c'est le backend qui verifie vraiment.
         contenu_token = jwt.decode(token, options={"verify_signature": False})
 
         request.session["token"] = token
@@ -64,8 +62,8 @@ def accueil_view(request):
 
 
 def _prochain_mercredi():
-    """Meme calcul que backend/films.py et data_engineering/pipeline.py :
-    duplique plutot que partage, chaque service reste independant."""
+    """Date du prochain mercredi. Recopie du backend, pour garder les
+    services independants."""
     aujourdhui = date.today()
     jours_a_ajouter = (2 - aujourdhui.weekday()) % 7
     return aujourdhui + timedelta(days=jours_a_ajouter)
@@ -74,9 +72,7 @@ def _prochain_mercredi():
 @connexion_requise
 def top10_view(request):
     token = request.session["token"]
-    # valeur de secours si l'API ne renvoie rien du tout (aucun film en
-    # attente de resultats nulle part en base) : la fenetre mercredi-samedi
-    # a venir, meme si elle est vide - au moins un affichage coherent
+    # dates affichees par defaut si l'API ne renvoie aucun film
     mercredi = _prochain_mercredi()
     contexte = {"date_debut": mercredi, "date_fin": mercredi + timedelta(days=3)}
     try:
@@ -85,18 +81,16 @@ def top10_view(request):
         messages.error(request, str(erreur))
         return render(request, "predictions/top10.html", {**contexte, "predictions": []})
 
-    # on lance une prediction par film pas encore sorti ; si l'un d'eux
-    # plante (film mal renseigne en base par exemple), on le passe et on
-    # continue avec les autres plutot que de faire planter toute la page
+    # une prediction par film. Si l'une plante on passe au suivant plutot
+    # que de casser toute la page.
     predictions = []
     for film in films:
         try:
             resultat = appel_predict(film["id_oeuvre"], token)
         except ErreurAPI:
             continue
-        # l'API renvoie une date ISO (ex: "2026-12-16") en texte brut : on
-        # la parse en vraie date pour que le template puisse l'afficher au
-        # format francais (jj/mm/aaaa) avec le filtre |date
+        # l'API renvoie la date en texte ISO, on la parse pour que le
+        # filtre |date du template puisse la formater
         texte_date_sortie = film.get("date_sortie")
         resultat["date_sortie"] = (
             date.fromisoformat(texte_date_sortie) if texte_date_sortie else None
@@ -104,13 +98,11 @@ def top10_view(request):
         resultat["synopsis"] = film.get("synopsis")
         predictions.append(resultat)
 
-    # /films-a-venir ne renvoie deja que les films du mercredi-vendredi a
-    # venir (pas tout ce qui sort dans les mois qui viennent), pas besoin
-    # de couper a 10
+    # pas besoin de couper a 10, l'API ne renvoie que la semaine a venir
     predictions.sort(key=lambda p: p["entrees_premiere_semaine_predites"], reverse=True)
 
-    # part des entrees predites par rapport au premier du classement, pour
-    # la petite jauge dans le template (juste visuel, pas une vraie metrique)
+    # pourcentage par rapport au premier du classement, juste pour la
+    # petite jauge du template
     plus_haute_prediction = (
         predictions[0]["entrees_premiere_semaine_predites"] if predictions else 0
     )
@@ -121,16 +113,9 @@ def top10_view(request):
             else 0
         )
 
-    # la date affichee en haut de page doit refleter la VRAIE semaine des
-    # films renvoyes par l'API, pas un recalcul independant du "prochain
-    # mercredi" cote frontend : /films-a-venir peut retomber sur la semaine
-    # precedente si le pipeline n8n n'a pas encore rattrape la semaine en
-    # cours (cf backend/films.py). On affiche toujours la fenetre complete
-    # mercredi->samedi (4 jours fixes, meme si tous les films sortent le
-    # meme jour) plutot que le min/max exact des films, ancree sur le
-    # mercredi de LEUR semaine (pas forcement celle d'aujourd'hui) - le
-    # changement de date en haut de page suit donc automatiquement le
-    # passage du pipeline n8n (le lundi), pas un calcul de calendrier fige.
+    # on recale les dates du titre sur la semaine des films renvoyes :
+    # l'API peut retomber sur la semaine d'avant si le scraping n'est pas
+    # encore passe. On affiche toujours mercredi -> samedi.
     dates_films = [p["date_sortie"] for p in predictions if p["date_sortie"]]
     if dates_films:
         premiere_date = min(dates_films)
@@ -144,10 +129,8 @@ def top10_view(request):
 
 
 def _gravite_ecart(ecart, reel):
-    """Classe l'erreur de prediction par son AMPLEUR (valeur absolue par
-    rapport au reel), pas par son signe : sous-estimer de 500k est aussi
-    grave que sur-estimer de 500k, ca n'a rien a voir avec rouge=mauvais/
-    jaune=bon comme avant."""
+    """Classe l'ecart selon son amplitude et pas son signe : se tromper de
+    500k en moins est aussi grave que 500k en plus."""
     if ecart is None or not reel:
         return "text-ink-tertiary"
     pct = abs(ecart) / reel
@@ -171,9 +154,7 @@ def historique_view(request):
         ligne["gravite"] = _gravite_ecart(ligne["ecart"], ligne["entrees_premiere_semaine_reelles"])
     contexte = {
         "historique": resultat["predictions"],
-        # l'API renvoie des dates ISO en texte brut (ex: "2026-08-13") : on
-        # les reparse en vraies dates pour que |date fonctionne au template
-        # (meme raison que date_sortie dans top10_view ci-dessus)
+        # meme parsing des dates que dans top10_view
         "semaines_disponibles": [date.fromisoformat(s) for s in resultat["semaines_disponibles"]],
         "semaine_choisie": semaine_choisie,
     }
@@ -213,9 +194,7 @@ def comptes_view(request):
         messages.error(request, str(erreur))
         comptes = []
 
-    # meme souci que pour date_sortie sur le top10 : l'API renvoie des
-    # dates ISO en texte, il faut les parser pour que |date les affiche
-    # au format francais dans le template
+    # pareil, les dates arrivent en texte et il faut les parser
     for compte in comptes:
         compte["date_inscription"] = date.fromisoformat(compte["date_inscription"])
         if compte["derniere_connexion"]:

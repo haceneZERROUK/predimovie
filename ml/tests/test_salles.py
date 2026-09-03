@@ -1,6 +1,5 @@
-# Test du sous-modele salles (ml/salles.py). Juste la construction de
-# features, pas d'entrainement reel ici (couvert par les tests du modele
-# principal, meme logique).
+# Tests du sous-modele salles. On teste juste la construction des
+# features, pas l'entrainement.
 import pandas as pd
 
 from ml.salles import _construire_features

@@ -5,33 +5,26 @@ from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
 
 class Base(DeclarativeBase):
-    """Classe de base dont hérite chaque modèle (Oeuvre, Acteur, ...).
-
-    SQLAlchemy utilise cette classe pour savoir quelles classes Python
-    correspondent à des tables SQL. Chaque modèle qui hérite de `Base`
-    est automatiquement enregistré dans `Base.metadata`, ce qui permet
-    ensuite de créer toutes les tables d'un coup (`Base.metadata.create_all`).
-    """
+    """Classe de base des modeles. Tout ce qui en herite est enregistre
+    dans Base.metadata, ce qui sert a Alembic et aux tests."""
 
     pass
 
 
 def get_engine(database_url: str | None = None):
-    """Crée une connexion (engine) vers la base, à partir d'une URL donnée
-    ou, à défaut, de la variable d'environnement DATABASE_URL."""
+    """Cree un engine vers la base, a partir de l'URL passee ou de
+    DATABASE_URL."""
     return create_engine(database_url or os.environ["DATABASE_URL"])
 
 
-# Connexion par défaut utilisée par l'application (ex: FastAPI).
-# La valeur de secours (après la virgule) ne sert que si DATABASE_URL
-# n'est pas définie, par exemple en développement local sans .env chargé.
+# engine par defaut de l'app. La valeur en dur sert juste en local quand
+# DATABASE_URL n'est pas definie.
 engine = create_engine(
     os.environ.get(
         "DATABASE_URL", "postgresql+psycopg2://predimovie:predimovie@localhost:5432/predimovie"
     )
 )
 
-# SessionLocal() crée une "session" : une conversation avec la base de
-# données dans laquelle on peut lire/écrire des objets, puis valider
-# (commit) ou annuler (rollback) les changements.
+# SessionLocal() ouvre une session pour lire/ecrire, puis commit ou
+# rollback
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)

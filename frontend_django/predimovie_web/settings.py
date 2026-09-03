@@ -30,17 +30,15 @@ DEBUG = os.environ.get("DJANGO_DEBUG", "true").lower() == "true"
 
 ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
 
-# Railway (et la plupart des PaaS) terminent le HTTPS a la proxy et parlent
-# en HTTP simple au conteneur : sans ces 2 reglages, Django croit que la
-# requete est en HTTP, le CSRF check echoue (403) sur tout formulaire en
-# prod. En local (variable absente), CSRF_TRUSTED_ORIGINS reste vide et
-# SECURE_PROXY_SSL_HEADER ne gene rien puisqu'il n'y a pas de proxy.
+# Railway coupe le HTTPS au niveau du proxy et parle en HTTP au
+# conteneur : sans ces 2 reglages Django croit qu'on est en HTTP et
+# renvoie une 403 CSRF sur tous les formulaires en prod
 CSRF_TRUSTED_ORIGINS = [
     o for o in os.environ.get("DJANGO_CSRF_TRUSTED_ORIGINS", "").split(",") if o
 ]
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
-# URL du backend FastAPI (login + prediction), appele depuis les vues.
+# adresse du backend FastAPI, appele depuis les vues
 BACKEND_API_URL = os.environ.get("BACKEND_API_URL", "http://localhost:8000")
 
 
@@ -58,9 +56,8 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
-    # sert les fichiers statiques directement depuis l'app WSGI - sans ca,
-    # DEBUG=False (obligatoire en prod) coupe le servage automatique des
-    # statiques de manage.py runserver, et tout (logos, image de fond) casse
+    # sert les fichiers statiques : avec DEBUG=False Django ne les sert
+    # plus tout seul et les images ne s'affichent plus
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",

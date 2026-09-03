@@ -7,17 +7,9 @@ from database.base import Base
 
 
 class Prediction(Base):
-    """Le resultat d'une prediction du modele ML pour un film, avec la
-    date a laquelle elle a ete calculee.
-
-    Alimentee via /predictions/relancer (backend/predictions_admin.py),
-    declenche a la main par un admin (bouton "Relancer les predictions"),
-    pour que les cinemas voient une prediction deja calculee sans attendre
-    un appel au modele.
-
-    nom_francais est duplique depuis `oeuvre` (au lieu d'une jointure) pour
-    que l'appli client puisse afficher le nom du film directement.
-    """
+    """Une prediction du modele pour un film, avec sa date de calcul.
+    nom_francais est recopie depuis oeuvre pour eviter une jointure a
+    l'affichage."""
 
     __tablename__ = "prediction"
 

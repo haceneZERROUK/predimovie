@@ -1,5 +1,5 @@
-# Tests des routes admin : relancer les predictions, et l'historique
-# predit/reel. Un compte cinema ne doit pas pouvoir y acceder (403).
+# Tests des routes admin : relance des predictions et historique
+# predit/reel. Un compte cinema ne doit pas y avoir acces.
 from datetime import UTC, date, datetime
 
 import pytest
@@ -43,8 +43,8 @@ def film_pas_sorti():
 
 @pytest.fixture
 def film_sorti_avec_prediction():
-    """Un film deja sorti (entrees connues) qui a une prediction stockee
-    en base, pour tester la comparaison predit/reel."""
+    """Un film deja sorti avec une prediction en base, pour comparer
+    predit et reel."""
     session = SessionLocal()
     nature = session.query(Nature).filter_by(nom_nature="Film").first()
     if nature is None:
@@ -57,8 +57,8 @@ def film_sorti_avec_prediction():
         nom_francais="Film Test Historique",
         nature=nature,
         entrees_premiere_semaine=1000,
-        # dans la fenetre par defaut de /predictions/historique (4 dernieres
-        # semaines) : sans ca, le film ne ressortirait pas du tout du test
+        # il faut etre dans les 4 dernieres semaines, sinon la route ne
+        # renvoie pas le film
         date_sortie=date.today(),
     )
     session.add(oeuvre)
@@ -132,8 +132,7 @@ def test_historique_liste_la_semaine_dans_semaines_disponibles(film_sorti_avec_p
 
 
 def test_historique_filtre_par_semaine_exclut_les_autres(film_sorti_avec_prediction):
-    """Une semaine sans aucune sortie ne doit renvoyer aucune ligne, meme
-    si d'autres films existent par ailleurs dans la base."""
+    """Une semaine sans sortie doit renvoyer une liste vide."""
     autre_semaine = date(2020, 1, 1).isoformat()  # forcement differente d'aujourd'hui
     reponse = client.get(
         "/predictions/historique",
@@ -146,8 +145,7 @@ def test_historique_filtre_par_semaine_exclut_les_autres(film_sorti_avec_predict
 
 
 def test_historique_ne_garde_que_la_derniere_prediction_par_film(film_sorti_avec_prediction):
-    """Si le film a ete "relance" plusieurs fois, on ne veut que la
-    prediction la plus recente dans l'historique, pas chaque essai."""
+    """Si le film a plusieurs predictions, on ne garde que la derniere."""
     session = SessionLocal()
     session.add(
         Prediction(

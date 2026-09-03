@@ -1,6 +1,4 @@
-# Extrait 3 mots-cles du synopsis de chaque film, via Claude Haiku - meme
-# prompt/modele que le node n8n "Extraire mots-cles" (scraping_hebdo.json).
-# Fait en Python plutot que d'attendre que n8n soit deploye quelque part.
+# Extrait 3 mots-cles du synopsis des films avec l'API Claude
 import httpx
 from sqlalchemy.orm import Session
 
@@ -9,7 +7,7 @@ from database.models import Oeuvre
 
 ANTHROPIC_URL = "https://api.anthropic.com/v1/messages"
 MODELE = "claude-haiku-4-5-20251001"
-LONGUEUR_MIN_SYNOPSIS = 50  # meme seuil que la requete SQL du node n8n
+LONGUEUR_MIN_SYNOPSIS = 50  # en dessous le synopsis est trop court pour etre utile
 
 PROMPT = (
     "Voici le synopsis d'un film :\n\n"
@@ -21,8 +19,8 @@ PROMPT = (
 
 
 def _parser_reponse_llm(texte: str) -> list[str]:
-    """Coupe la reponse en 3 mots-cles max, chacun tronque a 100 caracteres
-    (la colonne mot_cle_N fait VARCHAR(100), cf database/models/oeuvre.py)."""
+    """Coupe la reponse sur les virgules : 3 mots-cles max, tronques a 100
+    caracteres (la taille de la colonne en base)."""
     return [m.strip()[:100] for m in texte.split(",") if m.strip()][:3]
 
 
@@ -46,8 +44,8 @@ def extraire_mots_cles(synopsis: str) -> list[str]:
 
 
 def enrichir_les_films_sans_mots_cles(session: Session) -> int:
-    """Pour chaque film avec un synopsis mais sans mots-cles : appelle le
-    LLM et enregistre le resultat. Renvoie le nombre de films mis a jour."""
+    """Passe sur les films qui ont un synopsis mais pas encore de mots-cles
+    et les remplit. Renvoie le nombre de films traites."""
     films = (
         session.query(Oeuvre)
         .filter(Oeuvre.synopsis.isnot(None))

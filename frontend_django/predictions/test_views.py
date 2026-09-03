@@ -1,6 +1,5 @@
-# Tests des vues de connexion/deconnexion. On ne tape jamais le vrai
-# backend FastAPI ici : on remplace appel_login par une fausse fonction
-# (monkeypatch) pour rester rapide et independant du reseau.
+# Tests des vues. On ne tape jamais le vrai backend : les appels API sont
+# remplaces par des faux avec monkeypatch.
 import re
 from datetime import date
 
@@ -150,8 +149,7 @@ def test_top10_trie_par_entrees_predites_decroissant(client, monkeypatch):
 
 @pytest.mark.django_db
 def test_top10_convertit_la_date_iso_en_date_pour_l_affichage_francais(client, monkeypatch):
-    """L'API renvoie une date ISO en texte ("2026-12-16") : la vue doit la
-    convertir en vraie date pour que le template l'affiche en jj/mm/aaaa."""
+    """La vue doit convertir la date texte de l'API en vraie date."""
     _connecte(client)
     faux_films = [{"id_oeuvre": 1, "nom_francais": "Film", "date_sortie": "2026-12-16"}]
     monkeypatch.setattr("predictions.views.films_a_venir", lambda token: faux_films)
@@ -192,9 +190,8 @@ def test_top10_affiche_le_synopsis_au_survol(client, monkeypatch):
 
 @pytest.mark.django_db
 def test_top10_bulle_avec_message_de_repli_si_pas_de_synopsis(client, monkeypatch):
-    """Meme sans synopsis en base (film pas matche sur TMDB), la bulle
-    doit s'afficher au survol, avec un message de repli plutot que rien
-    du tout : sinon on dirait que le survol ne marche pas sur ces films."""
+    """Sans synopsis la bulle doit quand meme s'afficher, avec un message
+    a la place, sinon on croit que le survol ne marche pas."""
     _connecte(client)
     faux_films = [{"id_oeuvre": 1, "nom_francais": "Film Sans Synopsis"}]
     monkeypatch.setattr("predictions.views.films_a_venir", lambda token: faux_films)
@@ -216,8 +213,8 @@ def test_top10_bulle_avec_message_de_repli_si_pas_de_synopsis(client, monkeypatc
 
 @pytest.mark.django_db
 def test_top10_bulle_s_ouvre_vers_le_haut_pour_les_dernieres_lignes(client, monkeypatch):
-    """Pres du bas du tableau, la bulle doit s'ouvrir vers le haut (sinon
-    elle sort de la page et se fait couper par le bas de l'ecran)."""
+    """Sur les dernieres lignes la bulle doit s'ouvrir vers le haut,
+    sinon elle depasse du bas de la page."""
     _connecte(client)
     faux_films = [
         {"id_oeuvre": i, "nom_francais": f"Film {i}", "synopsis": f"Synopsis {i}"}
@@ -229,7 +226,7 @@ def test_top10_bulle_s_ouvre_vers_le_haut_pour_les_dernieres_lignes(client, monk
         lambda id_oeuvre, token: {
             "id_oeuvre": id_oeuvre,
             "nom_francais": f"Film {id_oeuvre}",
-            # entrees decroissantes pour garder l'ordre 1..6 apres le tri
+            # decroissant, pour garder l'ordre 1 a 6 apres le tri
             "entrees_premiere_semaine_predites": 1000 - id_oeuvre,
         },
     )
@@ -238,7 +235,7 @@ def test_top10_bulle_s_ouvre_vers_le_haut_pour_les_dernieres_lignes(client, monk
     assert reponse.status_code == 200
     contenu = reponse.content.decode()
 
-    # chaque bulle "<span class="synopsis-bubble ... top-full|bottom-full ...">Synopsis N</span>"
+    # on recupere la classe de positionnement de chaque bulle
     bulles = re.findall(r'class="synopsis-bubble([^"]*)"[^>]*>\s*Synopsis (\d)', contenu)
     classes_par_film = {numero: classes for classes, numero in bulles}
     assert "top-full" in classes_par_film["1"]

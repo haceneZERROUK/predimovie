@@ -1,5 +1,4 @@
-# Test du scraper AlloCiné : on utilise une vraie page sauvegardee
-# (fixtures/) pour ne pas dependre du reseau ni du site en direct.
+# Tests du scraper AlloCine, sur une vraie page sauvegardee dans fixtures/
 from pathlib import Path
 
 from data_engineering.allocine import extraire_films_de_la_semaine
@@ -30,8 +29,8 @@ def test_extraire_films_de_la_semaine_pas_de_doublons():
 
 
 def test_extraire_films_de_la_semaine_trouve_une_petite_sortie():
-    """Le but d'AlloCiné est de completer JPBOX avec les petites sorties
-    arthouse que JPBOX ne reference pas : on verifie qu'on les recupere bien."""
+    """On verifie qu'on recupere bien les petites sorties, c'est tout
+    l'interet d'AlloCine par rapport a JPBOX."""
     html = _lire_fixture("allocine_semaine.html")
     films = extraire_films_de_la_semaine(html)
 

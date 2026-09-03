@@ -1,5 +1,5 @@
-# Tests des routes admin de gestion des comptes cinema : lister et
-# creer. Un compte cinema ne doit pas pouvoir y acceder (403).
+# Tests des routes admin des comptes cinema. Un compte cinema ne doit pas
+# pouvoir y acceder.
 from datetime import date
 
 import pytest
@@ -124,8 +124,7 @@ def test_supprimer_compte_404_si_inconnu():
 
 
 def test_supprimer_compte_refuse_un_compte_admin():
-    """La suppression est volontairement limitee aux comptes CINEMA :
-    on ne peut pas supprimer un compte admin par cette route."""
+    """On ne doit pas pouvoir supprimer un compte admin par cette route."""
     session = SessionLocal()
     admin = Compte(
         mail="autre-admin@example.com",

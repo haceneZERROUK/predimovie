@@ -1,5 +1,4 @@
-# API du scraper : N8n appelle ces routes en HTTP pour déclencher
-# les différentes étapes du pipeline (voir data_engineering/pipeline.py).
+# Petite API pour declencher les etapes du pipeline en HTTP
 from datetime import date
 
 from fastapi import Depends, FastAPI, Header, HTTPException
@@ -13,17 +12,14 @@ app = FastAPI(title="Predimovie - Scraper")
 
 
 def verifier_cle_api(x_api_key: str = Header(default="")):
-    """Vérifie que l'appelant (N8n) connaît le secret partagé.
-    Pas de JWT ici : il n'y a pas d'utilisateur, juste une machine qui
-    déclenche le scraping."""
+    """Verifie la cle API passee dans l'en-tete X-Api-Key."""
     if x_api_key != SCRAPER_API_KEY:
         raise HTTPException(status_code=401, detail="Clé API invalide")
 
 
 @app.post("/scrape/upcoming", dependencies=[Depends(verifier_cle_api)])
 def scrape_upcoming(date_sortie: date | None = None):
-    """Flux A : récupère tous les films qui sortent un mercredi donné
-    (le prochain par défaut) via le calendrier JPBOX."""
+    """Flux A : les films qui sortent un mercredi donne, le prochain par defaut."""
     session = SessionLocal()
     try:
         nb_films = traiter_films_a_venir(session, date_sortie=date_sortie)
@@ -34,7 +30,7 @@ def scrape_upcoming(date_sortie: date | None = None):
 
 @app.post("/scrape/entrees", dependencies=[Depends(verifier_cle_api)])
 def scrape_entrees(idsem: int, vue: int = JPBOX_VUE_FRANCE):
-    """Flux B : récupère les entrées de première semaine pour idsem."""
+    """Flux B : les entrees de 1ere semaine pour la semaine idsem."""
     session = SessionLocal()
     try:
         nb_maj = traiter_entrees_semaine(session, idsem, vue)
@@ -45,7 +41,7 @@ def scrape_entrees(idsem: int, vue: int = JPBOX_VUE_FRANCE):
 
 @app.post("/scrape/backfill", dependencies=[Depends(verifier_cle_api)])
 def scrape_backfill(idsem_debut: int, idsem_fin: int, vue: int = JPBOX_VUE_FRANCE):
-    """Rattrapage historique sur une plage de semaines JPBOX."""
+    """Rejoue le flux B sur une plage de semaines."""
     session = SessionLocal()
     try:
         total = lancer_backfill(session, idsem_debut, idsem_fin, vue)
@@ -56,6 +52,5 @@ def scrape_backfill(idsem_debut: int, idsem_fin: int, vue: int = JPBOX_VUE_FRANC
 
 @app.get("/health")
 def health():
-    """Utilisé par docker-compose pour vérifier que le service tourne bien.
-    Pas protégé : ne renvoie aucune donnée sensible."""
+    """Route de healthcheck, pas protegee."""
     return {"status": "ok"}

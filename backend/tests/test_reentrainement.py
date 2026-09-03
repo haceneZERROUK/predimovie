@@ -1,6 +1,5 @@
-# Le vrai ml.train.main() n'est jamais appele ici (RandomizedSearchCV,
-# minutes d'entrainement, acces DB) : on le remplace par un faux pour
-# tester juste la route (cle API, declenchement en tache de fond).
+# On ne lance jamais le vrai entrainement ici, on le remplace par un faux
+# pour tester juste la route (cle API et tache de fond).
 from fastapi.testclient import TestClient
 
 import backend.reentrainement as reentrainement_module

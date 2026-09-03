@@ -1,14 +1,7 @@
-# Sous-modele "leger" : predit le nombre de salles en premiere semaine
-# d'exploitation, a partir de features connues AVANT la sortie (budget,
-# genre, casting/production, saisonnalite). Contrairement aux vraies
-# entrees, le nombre de salles reel n'est jamais connu avant la sortie -
-# ce sous-modele sert justement a en avoir une estimation exploitable en
-# amont, qui devient ensuite une feature du modele principal (ml/train.py).
-#
-# Volontairement plus simple que le modele principal (pas d'encodage
-# cible par acteur/realisateur/production, juste des comptages bruts) :
-# le but ici n'est pas la precision maximale, juste un signal utile en
-# plus de ce que le modele principal a deja.
+# Petit modele a part qui predit le nombre de salles en 1ere semaine, a
+# partir du budget, du genre, du casting et du mois de sortie. Le vrai
+# nombre de salles n'est connu qu'apres la sortie, donc on l'estime ici et
+# la prediction devient une feature du modele principal.
 import numpy as np
 import pandas as pd
 from xgboost import XGBRegressor
@@ -39,10 +32,8 @@ SELECT id_oeuvre, count(*) AS nb FROM production_oeuvre GROUP BY id_oeuvre;
 
 
 def _construire_features(oeuvres: pd.DataFrame, genres: pd.DataFrame, colonnes_genre=None):
-    """Construit un tableau de features simple : budget, saisonnalite,
-    genres en one-hot, nombre d'acteurs/realisateurs/production credites
-    (deja fusionnes dans `oeuvres` par charger_donnees). Pas d'encodage
-    cible ici : garder ce sous-modele volontairement leger."""
+    """Features simples : budget, mois de sortie, genres en one-hot et
+    nombre d'acteurs/realisateurs/societes. Pas d'encodage cible ici."""
     oeuvres = oeuvres.copy()
     oeuvres["mois_sortie"] = pd.to_datetime(oeuvres["date_sortie"]).dt.month
 
@@ -58,10 +49,8 @@ def _construire_features(oeuvres: pd.DataFrame, genres: pd.DataFrame, colonnes_g
 
 
 def charger_donnees():
-    """Charge et fusionne tout ce qu'il faut pour TOUS les films (pas
-    seulement ceux avec nb_salles_semaine1 connu : on veut pouvoir generer
-    une prediction pour chaque film, meme ceux utilises pour entrainer le
-    modele principal)."""
+    """Charge et fusionne les donnees de tous les films, pas seulement ceux
+    dont on connait deja nb_salles_semaine1."""
     engine = get_engine()
     oeuvres = pd.read_sql(REQUETE_OEUVRES, engine)
     genres = pd.read_sql(REQUETE_GENRES, engine)
@@ -93,10 +82,8 @@ COLONNES_NUMERIQUES = [
 
 
 def entrainer_et_predire_pour_tous():
-    """Entraine le sous-modele sur les films dont on connait le vrai
-    nb_salles_semaine1 (backfille depuis JPBOX), puis l'applique a TOUS
-    les films (y compris ceux du jeu d'entrainement du modele principal)
-    pour remplir oeuvre.nb_salles_predites."""
+    """Entraine sur les films dont on connait nb_salles_semaine1, puis
+    predit pour tous les films."""
     oeuvres, genres = charger_donnees()
     oeuvres, colonnes_genre = _construire_features(oeuvres, genres)
 
@@ -125,9 +112,7 @@ def entrainer_et_predire_pour_tous():
 
 
 def sauvegarder_predictions_en_base(predictions: pd.DataFrame):
-    """Ecrit nb_salles_predites pour chaque film directement en base :
-    ml/data.py n'a alors qu'a lire une colonne normale, pas besoin de
-    charger le sous-modele a chaque entrainement du modele principal."""
+    """Ecrit nb_salles_predites en base, par paquets de 1000."""
     from database.base import SessionLocal
     from database.models import Oeuvre
 

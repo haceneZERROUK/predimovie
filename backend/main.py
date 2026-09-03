@@ -1,5 +1,5 @@
-# App FastAPI : connexion (JWT) + prediction. Le frontend Django appelle
-# ces routes en HTTP.
+# L'app FastAPI, ou on branche tous les routers. C'est ce que le frontend
+# Django appelle en HTTP.
 from fastapi import FastAPI
 from prometheus_fastapi_instrumentator import Instrumentator
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -13,9 +13,8 @@ from backend.reentrainement import router as reentrainement_router
 
 
 class EntetesSecuriteMiddleware(BaseHTTPMiddleware):
-    """Ajoute quelques en-tetes de securite basiques (OWASP - mauvaise
-    configuration) a chaque reponse : pas de sniffing MIME, pas d'affichage
-    dans une iframe, pas de fuite d'URL vers un site externe."""
+    """Ajoute des en-tetes de securite sur chaque reponse : pas de sniffing
+    MIME, pas d'iframe, pas de referer envoye a l'exterieur."""
 
     async def dispatch(self, request, call_next):
         reponse = await call_next(request)
@@ -35,13 +34,12 @@ app.include_router(predictions_admin_router)
 app.include_router(comptes_router)
 app.include_router(reentrainement_router)
 
-# expose /metrics (format Prometheus) : nb de requetes, temps de reponse,
-# codes d'erreur, par route. Voir rapport_api.pdf pour les indicateurs
-# a suivre a partir de ca.
+# expose /metrics au format Prometheus : nb de requetes, temps de reponse
+# et codes d'erreur par route
 Instrumentator().instrument(app).expose(app)
 
 
 @app.get("/health")
 def health():
-    """Utilise par docker-compose pour verifier que le service tourne bien."""
+    """Route de healthcheck."""
     return {"status": "ok"}

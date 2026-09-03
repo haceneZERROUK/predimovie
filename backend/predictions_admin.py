@@ -1,6 +1,5 @@
-# Routes reservees a l'admin : relancer les predictions sur les films
-# pas encore sortis (et les stocker), et voir l'historique predit/reel
-# une fois que ces films sont sortis pour de vrai.
+# Routes admin : relancer les predictions sur les films pas encore sortis,
+# et consulter l'historique predit/reel une fois qu'ils sont sortis.
 from datetime import UTC, date, datetime, timedelta
 
 from fastapi import APIRouter, Depends, Header, HTTPException
@@ -30,8 +29,8 @@ def _relancer_predictions() -> int:
             try:
                 valeur_predite = predire(film.id_oeuvre)
             except ValueError:
-                # film mal renseigne (pas assez d'infos pour les features),
-                # on le saute plutot que de faire planter toute la relance
+                # film trop mal renseigne, on le saute au lieu de faire
+                # planter toute la relance
                 continue
             session.add(
                 Prediction(
@@ -59,9 +58,8 @@ def relancer_predictions(_utilisateur: dict = Depends(utilisateur_admin)):
     dependencies=[Depends(verifier_cle_api)],
 )
 def relancer_predictions_auto():
-    """Meme action que /predictions/relancer, mais appelable par N8n (cle API
-    au lieu d'un JWT admin) - declenchee chaque semaine juste apres le
-    scraping des films a venir et l'extraction des mots-cles."""
+    """Meme chose que /predictions/relancer, mais avec une cle API au lieu
+    d'un JWT admin. C'est ce qu'appelle le cron hebdo."""
     return RelanceReponse(nombre_predictions=_relancer_predictions())
 
 
@@ -69,19 +67,13 @@ def relancer_predictions_auto():
 def historique_predictions(
     semaine: date | None = None, _utilisateur: dict = Depends(utilisateur_admin)
 ):
-    """Top des films sortis (classes par vraies entrees, decroissant), pour
-    les films qui sont maintenant sortis (entrees_premiere_semaine connu).
-    La prediction stockee est affichee quand elle existe (certains films
-    n'en ont jamais eu, personne n'a clique "Relancer" avant leur sortie).
-
-    Sans le parametre `semaine`, affiche les 4 dernieres semaines de
-    sorties. Avec `semaine` (date du mercredi de sortie), affiche
-    uniquement cette semaine-la - c'est ce qu'utilise le menu deroulant
-    du front pour remonter plus loin dans l'historique."""
+    """Classement des films sortis par entrees reelles, avec la prediction
+    a cote quand il y en a une. Sans parametre on renvoie les 4 dernieres
+    semaines, avec `semaine` (le mercredi de sortie) juste celle-la."""
     session = SessionLocal()
     try:
-        # LEFT JOIN a partir de Oeuvre (pas Prediction) : un film sorti sans
-        # prediction stockee doit quand meme apparaitre dans le classement
+        # outerjoin depuis Oeuvre : les films sans prediction stockee
+        # doivent quand meme apparaitre
         requete = (
             session.query(Oeuvre, Prediction)
             .outerjoin(Prediction, Prediction.id_oeuvre == Oeuvre.id_oeuvre)
@@ -92,9 +84,8 @@ def historique_predictions(
         else:
             requete = requete.filter(Oeuvre.date_sortie >= date.today() - timedelta(weeks=4))
 
-        # un film relance plusieurs fois (bouton "Relancer les predictions"
-        # clique a plusieurs reprises) a plusieurs lignes de prediction :
-        # on trie par date de prediction pour ne garder que la plus recente
+        # un film peut avoir plusieurs predictions si on a relance
+        # plusieurs fois : on trie par date pour garder la plus recente
         lignes = requete.order_by(
             Oeuvre.entrees_premiere_semaine.desc(), Prediction.date_prediction.desc()
         ).all()

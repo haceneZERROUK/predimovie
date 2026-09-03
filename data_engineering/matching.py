@@ -1,34 +1,31 @@
-# Ce module sert à vérifier si un film trouvé sur JPBOX et un film trouvé
-# sur TMDB sont bien LE MEME film, alors que les titres ne sont parfois
-# pas écrits pareil d'une source à l'autre (accents, articles, ponctuation).
+# Compare les titres de films entre JPBOX/AlloCine et TMDB, vu qu'ils ne
+# sont pas ecrits pareil d'une source a l'autre
 import re
 import unicodedata
 
 from rapidfuzz import fuzz
 
-# Petits mots en début de titre qu'on ignore pour mieux comparer.
-# "l " correspond à "l'" une fois l'apostrophe transformée en espace.
+# articles qu'on retire en debut de titre avant de comparer
+# ("l " c'est "l'" une fois l'apostrophe remplacee par un espace)
 ARTICLES = ("le ", "la ", "les ", "l ", "the ", "a ", "an ")
 
 
 def nettoyer_annotations(titre: str) -> str:
-    """Enlève une annotation JPBOX en fin de titre, ex: "(Rep. 2026)" pour
-    une reprise en salle. jpbox.py a déjà retiré les parenthèses qui
-    contiennent juste une année ; celles qui restent ne font que polluer
-    la recherche et la comparaison TMDB."""
+    """Vire ce qu'il y a entre parentheses a la fin du titre, genre
+    "(Rep. 2026)" pour une reprise en salle."""
     return re.sub(r"\s*\([^)]*\)\s*$", "", titre).strip()
 
 
 def normaliser_titre(titre: str) -> str:
-    """Nettoie un titre pour pouvoir le comparer facilement :
-    minuscules, sans accents, sans ponctuation, sans article en tête."""
+    """Met le titre en minuscules, sans accents, sans ponctuation et sans
+    article devant, pour pouvoir le comparer."""
     titre = titre.lower().strip()
 
-    # enlève les accents (é -> e, à -> a, ...)
+    # accents : e -> e, a -> a...
     titre = unicodedata.normalize("NFKD", titre)
     titre = "".join(caractere for caractere in titre if not unicodedata.combining(caractere))
 
-    # ne garde que les lettres, les chiffres et les espaces
+    # on garde que les lettres, chiffres et espaces
     titre = "".join(c if c.isalnum() or c.isspace() else " " for c in titre)
     titre = " ".join(titre.split())
 
@@ -41,23 +38,21 @@ def normaliser_titre(titre: str) -> str:
 
 
 def se_ressemblent(titre_a: str, titre_b: str, seuil: int = 85) -> bool:
-    """Dit si 2 titres sont probablement le même film.
-    Le score de ressemblance va de 0 (rien à voir) à 100 (identiques)."""
+    """True si les 2 titres se ressemblent assez (score de 0 a 100)."""
     score = fuzz.ratio(normaliser_titre(titre_a), normaliser_titre(titre_b))
     return score >= seuil
 
 
 def meme_film(titre_jpbox: str, annee_jpbox: int | None, resultat_tmdb: dict) -> bool:
-    """Valide qu'un résultat TMDB correspond bien au film JPBOX :
-    les titres doivent se ressembler ET l'année de sortie doit coller
-    (±1 an, pour absorber le décalage entre sortie française et étrangère)."""
+    """Verifie qu'un resultat TMDB est bien le film JPBOX : les titres se
+    ressemblent et l'annee colle a 1 an pres (decalage sortie FR/etranger)."""
     titre_jpbox = nettoyer_annotations(titre_jpbox)
     titre_tmdb = resultat_tmdb.get("title", "")
     if not se_ressemblent(titre_jpbox, titre_tmdb):
         return False
 
     if annee_jpbox is None:
-        return True  # pas d'année côté JPBOX : on se contente du titre
+        return True  # pas d'annee dispo, on se base que sur le titre
 
     date_sortie = resultat_tmdb.get("release_date") or ""
     if len(date_sortie) < 4:
