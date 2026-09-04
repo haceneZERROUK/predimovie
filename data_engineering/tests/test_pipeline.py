@@ -50,7 +50,7 @@ def test_chercher_meme_sortie_retrouve_le_film_de_la_meme_semaine():
     session = _SessionFactice([deja_en_base])
     infos = {"id_tmdb": 550, "date_sortie": date(2026, 7, 15)}
 
-    assert _chercher_meme_sortie(session, infos) is deja_en_base
+    assert _chercher_meme_sortie(session, infos, "Un film") is deja_en_base
 
 
 def test_chercher_meme_sortie_ne_fusionne_pas_une_reprise():
@@ -60,7 +60,7 @@ def test_chercher_meme_sortie_ne_fusionne_pas_une_reprise():
     session = _SessionFactice([sortie_origine])
     infos = {"id_tmdb": 550, "date_sortie": date(2026, 7, 15)}
 
-    assert _chercher_meme_sortie(session, infos) is None
+    assert _chercher_meme_sortie(session, infos, "Un film") is None
 
 
 def test_chercher_meme_sortie_sans_date_ne_tranche_pas():
@@ -70,9 +70,19 @@ def test_chercher_meme_sortie_sans_date_ne_tranche_pas():
     session = _SessionFactice([sans_date])
     infos = {"id_tmdb": 550, "date_sortie": date(2026, 7, 15)}
 
-    assert _chercher_meme_sortie(session, infos) is None
+    assert _chercher_meme_sortie(session, infos, "Un film") is None
 
 
 def test_chercher_meme_sortie_sans_tmdb_ne_cherche_pas():
-    assert _chercher_meme_sortie(_SessionFactice([]), None) is None
-    assert _chercher_meme_sortie(_SessionFactice([]), {"id_tmdb": None}) is None
+    assert _chercher_meme_sortie(_SessionFactice([]), None, "Un film") is None
+    assert _chercher_meme_sortie(_SessionFactice([]), {"id_tmdb": None}, "Un film") is None
+
+
+def test_chercher_meme_sortie_ne_fusionne_pas_une_suite():
+    """Le rapprochement TMDB colle parfois une suite sur la fiche de
+    l'original. Sans controle du titre on ecraserait un film par un autre."""
+    original = Oeuvre(nom_francais="Toy Story", id_tmdb=862, date_sortie=date(2026, 7, 15))
+    session = _SessionFactice([original])
+    infos = {"id_tmdb": 862, "date_sortie": date(2026, 7, 15)}
+
+    assert _chercher_meme_sortie(session, infos, "Toy Story 5") is None

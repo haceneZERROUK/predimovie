@@ -36,9 +36,9 @@ def _vider(session):
     session.commit()
 
 
-def _creer(session, id_nature, id_tmdb, id_jpbox, jour, entrees):
+def _creer(session, id_nature, id_tmdb, id_jpbox, jour, entrees, titre="Film Test Nettoyage"):
     oeuvre = Oeuvre(
-        nom_francais="Film Test Nettoyage",
+        nom_francais=titre,
         id_nature=id_nature,
         id_tmdb=id_tmdb,
         id_jpbox=id_jpbox,
@@ -71,8 +71,12 @@ def base_avec_doublons(_id_nature):
             date_prediction=datetime.now(UTC),
         )
     )
-    origine = _creer(session, _id_nature, TMDB_REPRISE, 900003, date(1999, 11, 10), 50000)
-    reprise = _creer(session, _id_nature, TMDB_REPRISE, 900004, date(2026, 7, 15), 5000)
+    origine = _creer(
+        session, _id_nature, TMDB_REPRISE, 900003, date(1999, 11, 10), 50000, "Film Test Reprise"
+    )
+    reprise = _creer(
+        session, _id_nature, TMDB_REPRISE, 900004, date(2026, 7, 15), 5000, "Film Test Reprise"
+    )
     session.commit()
     # on retient les identifiants avant de fermer : apres, les objets ne
     # sont plus rattaches a une session et ne repondent plus
@@ -96,7 +100,7 @@ def test_les_deux_lignes_de_la_meme_semaine_forment_un_groupe(base_avec_doublons
     groupes = _groupes_de_doublons(session)
     session.close()
 
-    concernes = [g for g in groupes if g[0].id_tmdb == TMDB_DOUBLON]
+    concernes = [g for g in groupes if g[0].nom_francais == "Film Test Nettoyage"]
     assert len(concernes) == 1
     assert len(concernes[0]) == 2
 
@@ -107,7 +111,7 @@ def test_une_reprise_nest_pas_vue_comme_un_doublon(base_avec_doublons):
     groupes = _groupes_de_doublons(session)
     session.close()
 
-    assert [g for g in groupes if g[0].id_tmdb == TMDB_REPRISE] == []
+    assert [g for g in groupes if g[0].nom_francais == "Film Test Reprise"] == []
 
 
 def test_sans_appliquer_rien_nest_supprime(base_avec_doublons):

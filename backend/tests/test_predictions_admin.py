@@ -266,3 +266,43 @@ def test_historique_ecarte_les_reprises_comme_le_classement(reprise_en_salle):
     """Une reprise est deja ecartee du classement : elle ne doit pas
     reapparaitre dans l'historique."""
     assert [x for x in _historique() if x["nom_francais"] == "Film Test Reprise"] == []
+
+
+@pytest.fixture
+def suite_et_original(_nature):
+    """Deux films differents que le rapprochement TMDB a colles sur la meme
+    fiche : c'est le cas reel de "Toy Story 5" pointant sur "Toy Story".
+    Les deux doivent rester visibles."""
+    session = SessionLocal()
+    films = [
+        Oeuvre(
+            nom_francais="Film Test Original",
+            id_nature=_nature,
+            id_tmdb=987655,
+            date_sortie=date.today(),
+            annee_sortie=date.today().year,
+            entrees_premiere_semaine=700000,
+        ),
+        Oeuvre(
+            nom_francais="Film Test Original 2",
+            id_nature=_nature,
+            id_tmdb=987655,
+            date_sortie=date.today(),
+            annee_sortie=date.today().year,
+            entrees_premiere_semaine=300000,
+        ),
+    ]
+    session.add_all(films)
+    session.commit()
+    yield
+    for film in films:
+        session.delete(film)
+    session.commit()
+    session.close()
+
+
+def test_historique_garde_une_suite_qui_partage_la_fiche_tmdb(suite_et_original):
+    """Regrouper sur id_tmdb ferait disparaitre la suite de l'ecran."""
+    titres = [x["nom_francais"] for x in _historique()]
+    assert "Film Test Original" in titres
+    assert "Film Test Original 2" in titres

@@ -13,7 +13,7 @@
 import sys
 from collections import defaultdict
 
-from data_engineering.pipeline import ECART_MEME_SORTIE
+from data_engineering.matching import nettoyer_annotations, normaliser_titre
 from database.base import SessionLocal
 from database.models import (
     ActeurOeuvre,
@@ -29,30 +29,21 @@ TABLES_LIEES = (GenreOeuvre, ActeurOeuvre, RealisateurOeuvre, ProductionOeuvre, 
 
 
 def _groupes_de_doublons(session) -> list[list[Oeuvre]]:
-    """Regroupe les oeuvres qui partagent un id_tmdb et dont les dates de
-    sortie tombent dans la meme semaine. Deux sorties eloignees dans le
-    temps sont une reprise en salle, pas un doublon : on les laisse."""
-    par_tmdb = defaultdict(list)
-    for oeuvre in session.query(Oeuvre).filter(Oeuvre.id_tmdb.isnot(None)).all():
-        par_tmdb[oeuvre.id_tmdb].append(oeuvre)
+    """Regroupe les oeuvres qui ont le meme titre et la meme date de sortie.
 
-    groupes = []
-    for oeuvres in par_tmdb.values():
-        if len(oeuvres) < 2:
-            continue
-        datees = sorted((o for o in oeuvres if o.date_sortie), key=lambda o: o.date_sortie)
-        # on avance dans le temps et on coupe des qu'un ecart depasse la
-        # semaine : ce qui reste ensemble est un vrai doublon
-        courant = []
-        for oeuvre in datees:
-            if courant and oeuvre.date_sortie - courant[0].date_sortie > ECART_MEME_SORTIE:
-                if len(courant) > 1:
-                    groupes.append(courant)
-                courant = []
-            courant.append(oeuvre)
-        if len(courant) > 1:
-            groupes.append(courant)
-    return groupes
+    On ne regroupe pas sur id_tmdb, alors que ce serait plus direct : le
+    rapprochement TMDB est flou et donne le meme id a des films
+    differents ("Toy Story 5" pointe sur la fiche de "Toy Story"). Un
+    regroupement sur cet identifiant proposerait de supprimer des suites.
+
+    La date fait partie de la cle, donc une reprise en salle, qui sort des
+    annees apres, reste une ligne a part."""
+    par_cle = defaultdict(list)
+    for oeuvre in session.query(Oeuvre).filter(Oeuvre.date_sortie.isnot(None)).all():
+        titre = normaliser_titre(nettoyer_annotations(oeuvre.nom_francais or ""))
+        if titre:
+            par_cle[(titre, oeuvre.date_sortie)].append(oeuvre)
+    return [groupe for groupe in par_cle.values() if len(groupe) > 1]
 
 
 def _a_garder(groupe: list[Oeuvre]) -> Oeuvre:
@@ -77,7 +68,8 @@ def main(appliquer: bool = False) -> int:
                 marque = "GARDE " if oeuvre is garde else "SUPPR."
                 print(
                     f"  {marque} id_oeuvre={oeuvre.id_oeuvre} id_jpbox={oeuvre.id_jpbox} "
-                    f"sortie={oeuvre.date_sortie} entrees={oeuvre.entrees_premiere_semaine}"
+                    f"sortie={oeuvre.date_sortie} entrees={oeuvre.entrees_premiere_semaine} "
+                    f"| {oeuvre.nom_francais}"
                 )
                 if oeuvre is not garde:
                     nb_supprimables += 1
