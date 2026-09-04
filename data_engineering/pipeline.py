@@ -4,7 +4,12 @@ from datetime import date, timedelta
 from sqlalchemy.orm import Session
 
 from data_engineering import allocine, imdb, jpbox, tmdb
-from data_engineering.matching import meme_film, nettoyer_annotations, se_ressemblent
+from data_engineering.matching import (
+    meme_film,
+    nettoyer_annotations,
+    normaliser_titre,
+    se_ressemblent,
+)
 from database.models import (
     Acteur,
     ActeurOeuvre,
@@ -123,14 +128,20 @@ def enrichir_avec_tmdb(titre: str, annee: int | None) -> dict | None:
 ECART_MEME_SORTIE = timedelta(days=7)
 
 
-def _chercher_meme_sortie(session: Session, infos_tmdb: dict | None) -> Oeuvre | None:
+def _chercher_meme_sortie(
+    session: Session, infos_tmdb: dict | None, titre_francais: str = ""
+) -> Oeuvre | None:
     """Retrouve un film deja en base a partir de son id_tmdb, quand JPBOX
     l'expose sous deux id_jpbox differents (une ligne au calendrier, une
     autre au classement). C'est ce qui creait des doublons a l'ecran.
 
     On exige que les deux dates de sortie soient dans la meme semaine :
     sans ca on fusionnerait une reprise en salle avec la sortie d'origine,
-    alors que ce sont bien deux exploitations differentes."""
+    alors que ce sont bien deux exploitations differentes.
+
+    On verifie aussi le titre, parce que le rapprochement TMDB est flou et
+    donne parfois le meme id a une suite : "Toy Story 5" pointe sur la
+    fiche de "Toy Story". Sans ce controle on fusionnerait deux films."""
     if infos_tmdb is None or infos_tmdb.get("id_tmdb") is None:
         return None
 
@@ -141,9 +152,17 @@ def _chercher_meme_sortie(session: Session, infos_tmdb: dict | None) -> Oeuvre |
         # le doublon plutot que de fusionner deux films differents
         if date_tmdb is None or candidat.date_sortie is None:
             continue
-        if abs(candidat.date_sortie - date_tmdb) <= ECART_MEME_SORTIE:
+        if abs(candidat.date_sortie - date_tmdb) > ECART_MEME_SORTIE:
+            continue
+        if _meme_titre(candidat.nom_francais, titre_francais):
             return candidat
     return None
+
+
+def _meme_titre(titre_a: str, titre_b: str) -> bool:
+    a = normaliser_titre(nettoyer_annotations(titre_a or ""))
+    b = normaliser_titre(nettoyer_annotations(titre_b or ""))
+    return a == b and a != ""
 
 
 def sauvegarder_film(
@@ -165,7 +184,7 @@ def sauvegarder_film(
     if oeuvre is None and id_allocine is not None:
         oeuvre = session.query(Oeuvre).filter_by(id_allocine=id_allocine).first()
     if oeuvre is None:
-        oeuvre = _chercher_meme_sortie(session, infos_tmdb)
+        oeuvre = _chercher_meme_sortie(session, infos_tmdb, titre_francais)
 
     if oeuvre is None:
         nature = _get_ou_creer_nature(session, "Film")
