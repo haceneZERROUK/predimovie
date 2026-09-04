@@ -162,26 +162,69 @@ def correlations_groupees() -> pd.DataFrame:
     return pd.DataFrame(lignes).sort_values("score", ascending=False).reset_index(drop=True)
 
 
+def _graphique_barres(tri, etiquettes, couleurs, xlabel, titre, fichier, hauteur=4.6):
+    fig, ax = plt.subplots(figsize=(10, hauteur))
+    barres = ax.barh(etiquettes, tri["score"], color=couleurs)
+    ax.bar_label(barres, fmt="%.3f", padding=3, fontsize=9)
+    ax.set_xlabel(xlabel)
+    ax.set_xlim(0, max(tri["score"].max() * 1.2, 0.05))
+    ax.set_title(titre)
+    fig.tight_layout()
+    fig.savefig(f"{DOSSIER_IMAGES}/{fichier}.png", dpi=150)
+    plt.close(fig)
+
+
+def graphique_pearson(correlations: pd.DataFrame):
+    """Les variables continues seules, en Pearson."""
+    tri = correlations[correlations["mesure"].str.startswith("Pearson")].sort_values("score")
+    _graphique_barres(
+        tri,
+        list(tri["variable"]),
+        [COULEUR_PRINCIPALE] * len(tri),
+        "r2 de Pearson avec les entrees (log)",
+        "Correlation de Pearson des variables continues\navec les entrees premiere semaine",
+        "correlation_pearson",
+        hauteur=3.6,
+    )
+
+
+def graphique_anova(correlations: pd.DataFrame):
+    """Les familles categorielles, regroupees, en omega carre."""
+    tri = correlations[correlations["mesure"].str.startswith("omega")].sort_values("score")
+    etiquettes = [
+        f"{v}  ({n} modalites)" for v, n in zip(tri["variable"], tri["nb_modalites"], strict=True)
+    ]
+    _graphique_barres(
+        tri,
+        etiquettes,
+        [COULEUR_GROUPE] * len(tri),
+        "omega2 : part de la variance des entrees expliquee (log)",
+        "ANOVA par famille regroupee\n(omega carre, corrige du nombre de modalites)",
+        "anova_familles_groupees",
+        hauteur=3.6,
+    )
+
+
 def graphique_correlations_groupees(correlations: pd.DataFrame):
+    """Les deux mesures sur un meme graphique, pour comparer d'un coup d'oeil.
+    Pearson au carre et omega carre se lisent tous les deux comme une part de
+    variance expliquee, donc l'echelle est la meme."""
     tri = correlations.dropna(subset=["score"]).sort_values("score")
     etiquettes = [
         f"{v}  ({n} modalites)" if n > 1 else v
         for v, n in zip(tri["variable"], tri["nb_modalites"], strict=True)
     ]
     couleurs = [COULEUR_GROUPE if n > 1 else COULEUR_PRINCIPALE for n in tri["nb_modalites"]]
-
-    fig, ax = plt.subplots(figsize=(10, 5.5))
-    barres = ax.barh(etiquettes, tri["score"], color=couleurs)
-    ax.bar_label(barres, fmt="%.3f", padding=3, fontsize=9)
-    ax.set_xlabel("part de la variance des entrees expliquee (log)")
-    ax.set_xlim(0, max(tri["score"].max() * 1.18, 0.05))
-    ax.set_title(
+    _graphique_barres(
+        tri,
+        etiquettes,
+        couleurs,
+        "part de la variance des entrees expliquee (log)",
         "Lien entre les variables brutes et les entrees\n"
-        "Pearson r2 pour les continues, omega2 (ANOVA corrigee) pour les familles"
+        "Pearson r2 pour les continues, omega2 (ANOVA corrigee) pour les familles",
+        "correlations_groupees",
+        hauteur=5.5,
     )
-    fig.tight_layout()
-    fig.savefig(f"{DOSSIER_IMAGES}/correlations_groupees.png", dpi=150)
-    plt.close(fig)
 
 
 def main():
@@ -194,6 +237,8 @@ def main():
     print("\n=== LIEN AVEC LES ENTREES (donnees brutes) ===")
     print(correlations.to_string(index=False))
     graphique_correlations_groupees(correlations)
+    graphique_pearson(correlations)
+    graphique_anova(correlations)
     print(f"\ngraphiques ecrits dans {DOSSIER_IMAGES}/")
 
 
