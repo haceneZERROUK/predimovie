@@ -37,6 +37,27 @@ def normaliser_titre(titre: str) -> str:
     return titre.strip()
 
 
+# suites ecrites en chiffres romains, pour les comparer aux arabes :
+# "Bad Boys II" et "Bad Boys 2", c'est le meme film
+ROMAINS = {"ii": 2, "iii": 3, "iv": 4, "v": 5, "vi": 6, "vii": 7, "viii": 8, "ix": 9, "x": 10}
+
+
+def numero_de_suite(titre: str) -> int | None:
+    """Le numero de suite a la fin du titre, s'il y en a un.
+
+    "Toy Story 5" et "Toy Story" ressemblent a 90 %, assez pour que le
+    rapprochement les confonde alors que ce sont deux films. Comparer ce
+    numero les separe."""
+    mots = normaliser_titre(nettoyer_annotations(titre)).split()
+    if len(mots) < 2:
+        # un titre qui n'est qu'un nombre ("1917") n'est pas une suite
+        return None
+    dernier = mots[-1]
+    if dernier.isdigit():
+        return int(dernier)
+    return ROMAINS.get(dernier)
+
+
 def se_ressemblent(titre_a: str, titre_b: str, seuil: int = 85) -> bool:
     """True si les 2 titres se ressemblent assez (score de 0 a 100)."""
     score = fuzz.ratio(normaliser_titre(titre_a), normaliser_titre(titre_b))
@@ -49,6 +70,12 @@ def meme_film(titre_jpbox: str, annee_jpbox: int | None, resultat_tmdb: dict) ->
     titre_jpbox = nettoyer_annotations(titre_jpbox)
     titre_tmdb = resultat_tmdb.get("title", "")
     if not se_ressemblent(titre_jpbox, titre_tmdb):
+        return False
+
+    # une suite ressemble beaucoup a son original : sans ce controle,
+    # "Toy Story 5" repartait avec la fiche de "Toy Story", donc son
+    # synopsis, son casting et son budget
+    if numero_de_suite(titre_jpbox) != numero_de_suite(titre_tmdb):
         return False
 
     if annee_jpbox is None:

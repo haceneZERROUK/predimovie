@@ -3,6 +3,7 @@ from data_engineering.matching import (
     meme_film,
     nettoyer_annotations,
     normaliser_titre,
+    numero_de_suite,
     se_ressemblent,
 )
 
@@ -56,3 +57,32 @@ def test_meme_film_ignore_annotation_jpbox():
     # passe sous le seuil
     resultat_tmdb = {"title": "Ghost in the Shell", "release_date": "1995-11-18"}
     assert meme_film("Ghost in the Shell (Rep. 2026)", None, resultat_tmdb) is True
+
+
+def test_numero_de_suite_chiffres_et_romains():
+    assert numero_de_suite("Toy Story 5") == 5
+    assert numero_de_suite("Bad Boys II") == 2
+    assert numero_de_suite("Toy Story") is None
+
+
+def test_numero_de_suite_ignore_un_titre_qui_est_un_nombre():
+    """ "1917" n'est pas la suite de quoi que ce soit."""
+    assert numero_de_suite("1917") is None
+    assert numero_de_suite("300") is None
+
+
+def test_meme_film_refuse_une_suite_prise_pour_l_original():
+    """Le cas trouve en production : "Toy Story 5" ressemble a 90 % a
+    "Toy Story", assez pour passer le seuil de ressemblance. Sans controle
+    du numero il repartait avec le synopsis et le casting de l'original."""
+    fiche_original = {"title": "Toy Story", "release_date": "2026-06-17"}
+    assert meme_film("Toy Story 5", 2026, fiche_original) is False
+
+
+def test_meme_film_accepte_la_suite_ecrite_en_romain():
+    """ "Bad Boys II" et "Bad Boys 2", c'est le meme film."""
+    assert meme_film("Bad Boys II", 2003, {"title": "Bad Boys 2", "release_date": "2003-07-18"})
+
+
+def test_meme_film_accepte_toujours_un_titre_sans_numero():
+    assert meme_film("La Nirvana", 2026, {"title": "La Nirvana", "release_date": "2026-08-12"})

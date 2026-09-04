@@ -35,6 +35,9 @@ class _SessionFactice:
     def filter_by(self, **_criteres):
         return self
 
+    def filter(self, *_criteres):
+        return self
+
     def all(self):
         return self.candidats
 
@@ -86,3 +89,31 @@ def test_chercher_meme_sortie_ne_fusionne_pas_une_suite():
     infos = {"id_tmdb": 862, "date_sortie": date(2026, 7, 15)}
 
     assert _chercher_meme_sortie(session, infos, "Toy Story 5") is None
+
+
+def test_oeuvres_mal_rapprochees_repere_la_ligne_fautive(monkeypatch):
+    """Deux oeuvres partagent une fiche TMDB avec des numeros de suite
+    differents : c'est le titre de la fiche qui dit laquelle se trompe."""
+    from data_engineering import corriger_suites
+
+    original = Oeuvre(nom_francais="Toy Story", id_tmdb=1084244, date_sortie=date(1995, 11, 22))
+    suite = Oeuvre(nom_francais="Toy Story 5", id_tmdb=1084244, date_sortie=date(2026, 6, 17))
+    monkeypatch.setattr(
+        corriger_suites.tmdb, "get_details_film", lambda _id: {"title": "Toy Story 5"}
+    )
+
+    suspects = corriger_suites._oeuvres_mal_rapprochees(_SessionFactice([original, suite]))
+
+    assert [o.nom_francais for o, _ in suspects] == ["Toy Story"]
+
+
+def test_oeuvres_mal_rapprochees_ne_signale_rien_quand_tout_concorde(monkeypatch):
+    from data_engineering import corriger_suites
+
+    a = Oeuvre(nom_francais="La Nirvana", id_tmdb=42, date_sortie=date(2026, 8, 12))
+    b = Oeuvre(nom_francais="La Nirvana", id_tmdb=42, date_sortie=date(2026, 8, 12))
+    monkeypatch.setattr(
+        corriger_suites.tmdb, "get_details_film", lambda _id: {"title": "La Nirvana"}
+    )
+
+    assert corriger_suites._oeuvres_mal_rapprochees(_SessionFactice([a, b])) == []
