@@ -20,6 +20,10 @@ dependencies = [
     "joblib>=1.4",
     "streamlit>=1.38",
     "django>=5.1",
+    # sert a servir les fichiers statiques du front (cf settings.py). Il
+    # etait deja dans frontend_django/requirements.txt pour l'image Docker,
+    # mais pas ici, du coup les tests Django plantaient a l'import en CI.
+    "whitenoise>=6.7",
     "beautifulsoup4>=4.15.0",
     "lxml>=6.1.1",
     "rapidfuzz>=3.14.5",
