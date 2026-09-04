@@ -2,8 +2,15 @@ name: Veille hebdo
 
 # Le PoC Streamlit tourne en local, mais les articles qu'il affiche sont
 # lus dans veille/articles_veille.json, qui est versionne. Ce workflow
-# relance le scraping chaque semaine et commite le json a jour : il suffit
-# d'un git pull pour que le PoC local affiche les derniers articles.
+# relance le scraping chaque semaine et ouvre une pull request avec le json
+# a jour : il suffit de la fusionner puis de faire un git pull.
+#
+# Pourquoi une pull request et pas un push direct : la branche main exige
+# que lint et test soient passes. Ces verifications se declenchent APRES un
+# push, donc un commit pousse directement ne peut jamais les satisfaire, et
+# GitHub le refuse ("2 of 2 required status checks are expected"). En
+# passant par une branche, les verifications tournent normalement et la
+# protection de main reste en place.
 on:
   schedule:
     # tous les lundis a 7h UTC
@@ -14,9 +21,10 @@ on:
 jobs:
   scraper:
     runs-on: ubuntu-latest
-    # sans ca le job ne peut pas pusher le json mis a jour
+    # contents pour pousser la branche, pull-requests pour ouvrir la PR
     permissions:
       contents: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -28,12 +36,33 @@ jobs:
       - run: playwright install --with-deps chromium
       - run: python -m veille.veille_scraping
 
-      - name: Commit du json
+      - name: Ouvre une pull request si les articles ont change
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          if git diff --quiet veille/articles_veille.json; then
+            echo "aucun changement, rien a proposer"
+            exit 0
+          fi
+
+          BRANCHE="veille/maj-$(date +%Y-%m-%d)"
+          NB=$(python3 -c "import json; print(len(json.load(open('veille/articles_veille.json'))['articles']))")
+
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCHE"
           git add veille/articles_veille.json
-          # --quiet sort en erreur s'il y a quelque chose a commiter, donc
-          # le git commit ne tourne que dans ce cas la
-          git diff --cached --quiet || git commit -m "Met a jour les articles de veille"
-          git push
+          git commit -m "Met a jour les articles de veille ($NB articles)"
+          git push --force origin "$BRANCHE"
+
+          # --fill reprendrait le message du commit ; on ecrit un corps plus
+          # explicite pour que la PR se lise sans ouvrir le diff
+          gh pr create \
+            --base main \
+            --head "$BRANCHE" \
+            --title "Veille hebdomadaire du $(date +%d/%m/%Y)" \
+            --body "Collecte automatique du $(date +%d/%m/%Y) : $NB articles retenus sur le scraping.
+
+          Genere par le workflow \`veille.yml\`. Le fichier \`veille/articles_veille.json\`
+          alimente la page de veille du PoC Streamlit." \
+            || echo "une pull request existe deja pour cette branche"
