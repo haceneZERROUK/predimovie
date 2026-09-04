@@ -80,3 +80,32 @@ jobs:
           tags: |
             ghcr.io/${{ env.REPO_LC }}-${{ matrix.service.nom }}:latest
             ghcr.io/${{ env.REPO_LC }}-${{ matrix.service.nom }}:${{ github.sha }}
+
+  # deploiement : met en ligne sur Railway une fois les images publiees.
+  # Sans cette etape la chaine s'arretait a la publication et le
+  # deploiement se faisait a la main, donc du code fusionne pouvait rester
+  # des heures sans etre en ligne.
+  deploiement:
+    runs-on: ubuntu-latest
+    needs: build-images
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    strategy:
+      # un service a la fois : si le backend echoue, on ne met pas non plus
+      # le frontend en ligne, il appelle une API qui n'a pas demarre
+      max-parallel: 1
+      matrix:
+        service: [backend, frontend]
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm install -g @railway/cli
+      - name: Mise en ligne du service ${{ matrix.service }}
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          # tant que le jeton n'est pas configure on ne fait pas echouer la
+          # chaine : le reste du travail est valide, seul l'envoi manque
+          if [ -z "$RAILWAY_TOKEN" ]; then
+            echo "RAILWAY_TOKEN absent : deploiement ignore."
+            exit 0
+          fi
+          railway up --service ${{ matrix.service }} --ci
