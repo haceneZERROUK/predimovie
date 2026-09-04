@@ -17,7 +17,7 @@ Un compte de démonstration est mis à disposition pour la parcourir :
 
 | | |
 |---|---|
-| Identifiant | `cine-test` |
+| Identifiant | `cine@test.fr` |
 | Mot de passe | `Cinema123` |
 
 Ce compte a le rôle `CINEMA`. Il donne accès à l'accueil et au **Top 10 des sorties de la
