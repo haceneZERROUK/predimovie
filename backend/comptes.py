@@ -3,6 +3,7 @@
 from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import func
 
 from backend.auth import utilisateur_admin
 from backend.schemas import CompteCreationDemande, CompteReponse
@@ -41,12 +42,16 @@ def creer_compte(
 ) -> CompteReponse:
     session = SessionLocal()
     try:
-        deja_existant = session.query(Compte).filter_by(mail=demande.mail).first()
+        # on enregistre le mail en minuscules, et on cherche le doublon sans
+        # tenir compte de la casse : sinon on pourrait creer Jean@cine.fr et
+        # jean@cine.fr comme deux comptes differents
+        mail = demande.mail.strip().lower()
+        deja_existant = session.query(Compte).filter(func.lower(Compte.mail) == mail).first()
         if deja_existant is not None:
             raise HTTPException(status_code=409, detail="Un compte existe deja avec ce mail")
 
         compte = Compte(
-            mail=demande.mail,
+            mail=mail,
             mot_de_passe=hacher_mot_de_passe(demande.mot_de_passe),
             role=RoleCompte.CINEMA,
             nom_cinema=demande.nom_cinema,

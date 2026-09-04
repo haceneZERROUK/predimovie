@@ -59,3 +59,20 @@ def test_login_avec_mail_inconnu():
         "/auth/login", json={"mail": "inconnu@example.com", "mot_de_passe": "peu importe"}
     )
     assert reponse.status_code == 401
+
+
+def test_login_accepte_le_mail_en_majuscules(compte_test):
+    # le compte est enregistre en minuscules, mais quelqu'un qui tape son
+    # mail avec des majuscules doit quand meme pouvoir se connecter
+    reponse = client.post(
+        "/auth/login", json={"mail": "Test-Backend@Example.COM", "mot_de_passe": "motdepasse123"}
+    )
+    assert reponse.status_code == 200
+
+
+def test_login_accepte_le_mail_avec_des_espaces(compte_test):
+    reponse = client.post(
+        "/auth/login",
+        json={"mail": "  test-backend@example.com  ", "mot_de_passe": "motdepasse123"},
+    )
+    assert reponse.status_code == 200

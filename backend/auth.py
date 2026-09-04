@@ -4,6 +4,7 @@ from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from sqlalchemy import func
 
 from backend.schemas import ConnexionDemande, ConnexionReponse
 from backend.security import creer_token, decoder_token, verifier_mot_de_passe
@@ -18,7 +19,13 @@ schema_bearer = HTTPBearer()
 def login(demande: ConnexionDemande):
     session = SessionLocal()
     try:
-        compte = session.query(Compte).filter_by(mail=demande.mail).first()
+        # on compare sans tenir compte de la casse ni des espaces autour :
+        # quelqu'un qui tape Cine@Test.fr doit pouvoir se connecter. On passe
+        # par func.lower cote SQL plutot que de juste minusculer la saisie,
+        # comme ca les comptes deja enregistres avec une majuscule marchent
+        # aussi, sans avoir a nettoyer la base.
+        mail = demande.mail.strip().lower()
+        compte = session.query(Compte).filter(func.lower(Compte.mail) == mail).first()
 
         # meme message que le compte existe ou pas, pour ne pas aider
         # quelqu'un qui cherche des mails valides
