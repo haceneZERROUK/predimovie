@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, Header, HTTPException
 
 from backend.auth import utilisateur_admin
 from backend.config import PREDICTION_API_KEY
+from backend.filtres_oeuvres import filtres_ressortie
 from backend.moteur_prediction import predire
 from backend.schemas import HistoriquePrediction, HistoriqueReponse, RelanceReponse
 from backend.security import cle_api_valide
@@ -78,7 +79,7 @@ def historique_predictions(
         requete = (
             session.query(Oeuvre, Prediction)
             .outerjoin(Prediction, Prediction.id_oeuvre == Oeuvre.id_oeuvre)
-            .filter(Oeuvre.entrees_premiere_semaine.isnot(None))
+            .filter(Oeuvre.entrees_premiere_semaine.isnot(None), *filtres_ressortie())
         )
         if semaine is not None:
             requete = requete.filter(Oeuvre.date_sortie == semaine)
@@ -91,11 +92,22 @@ def historique_predictions(
             Oeuvre.entrees_premiere_semaine.desc(), Prediction.date_prediction.desc()
         ).all()
         deja_vus = set()
+        tmdb_deja_vus = set()
         predictions = []
         for oeuvre, prediction in lignes:
             if oeuvre.id_oeuvre in deja_vus:
                 continue
             deja_vus.add(oeuvre.id_oeuvre)
+            # meme film collecte deux fois sous deux id_jpbox : les deux
+            # lignes ont le meme id_tmdb. On garde celle qui a le plus
+            # d'entrees, c'est l'exploitation principale - le tri par
+            # entrees decroissantes fait qu'on tombe dessus en premier.
+            # id_tmdb peut etre vide, et dans ce cas on ne regroupe pas :
+            # deux films sans fiche ne sont pas le meme film.
+            if oeuvre.id_tmdb is not None:
+                if oeuvre.id_tmdb in tmdb_deja_vus:
+                    continue
+                tmdb_deja_vus.add(oeuvre.id_tmdb)
             reel = oeuvre.entrees_premiere_semaine
             predite = prediction.entrees_premiere_semaine_predites if prediction else None
             predictions.append(
@@ -113,6 +125,9 @@ def historique_predictions(
             .filter(
                 Oeuvre.entrees_premiere_semaine.isnot(None),
                 Oeuvre.date_sortie.isnot(None),
+                # sinon une semaine qui ne contient que des reprises est
+                # proposee dans la liste puis s'affiche vide
+                *filtres_ressortie(),
             )
             .distinct()
             .order_by(Oeuvre.date_sortie.desc())

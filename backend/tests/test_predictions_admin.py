@@ -176,3 +176,93 @@ def test_historique_ne_garde_que_la_derniere_prediction_par_film(film_sorti_avec
     ).delete()
     session.commit()
     session.close()
+
+
+@pytest.fixture
+def _nature():
+    session = SessionLocal()
+    nature = session.query(Nature).filter_by(nom_nature="Film").first()
+    if nature is None:
+        nature = Nature(nom_nature="Film")
+        session.add(nature)
+        session.commit()
+        session.refresh(nature)
+    id_nature = nature.id_nature
+    session.close()
+    return id_nature
+
+
+@pytest.fixture
+def film_collecte_deux_fois(_nature):
+    """Le meme film entre deux fois en base sous deux id_jpbox differents :
+    meme id_tmdb, meme semaine, mais des entrees reelles differentes."""
+    session = SessionLocal()
+    doublons = [
+        Oeuvre(
+            nom_francais="Film Test Doublon",
+            id_nature=_nature,
+            id_tmdb=987654,
+            id_jpbox=111,
+            date_sortie=date.today(),
+            annee_sortie=date.today().year,
+            entrees_premiere_semaine=800000,
+        ),
+        Oeuvre(
+            nom_francais="Film Test Doublon",
+            id_nature=_nature,
+            id_tmdb=987654,
+            id_jpbox=222,
+            date_sortie=date.today(),
+            annee_sortie=date.today().year,
+            entrees_premiere_semaine=200000,
+        ),
+    ]
+    session.add_all(doublons)
+    session.commit()
+    yield
+    for oeuvre in doublons:
+        session.delete(oeuvre)
+    session.commit()
+    session.close()
+
+
+@pytest.fixture
+def reprise_en_salle(_nature):
+    """Un film de 1999 ressorti aujourd'hui : c'est une reprise."""
+    session = SessionLocal()
+    oeuvre = Oeuvre(
+        nom_francais="Film Test Reprise",
+        id_nature=_nature,
+        id_tmdb=123456,
+        date_sortie=date.today(),
+        annee_sortie=1999,
+        entrees_premiere_semaine=5000,
+    )
+    session.add(oeuvre)
+    session.commit()
+    yield
+    session.delete(oeuvre)
+    session.commit()
+    session.close()
+
+
+def _historique():
+    reponse = client.get(
+        "/predictions/historique", headers={"Authorization": f"Bearer {_token('admin')}"}
+    )
+    assert reponse.status_code == 200
+    return reponse.json()["predictions"]
+
+
+def test_historique_ne_montre_quune_ligne_par_film_collecte_deux_fois(film_collecte_deux_fois):
+    """Deux lignes en base pour le meme film ne doivent en donner qu'une a
+    l'ecran, celle de l'exploitation principale."""
+    lignes = [x for x in _historique() if x["nom_francais"] == "Film Test Doublon"]
+    assert len(lignes) == 1
+    assert lignes[0]["entrees_premiere_semaine_reelles"] == 800000
+
+
+def test_historique_ecarte_les_reprises_comme_le_classement(reprise_en_salle):
+    """Une reprise est deja ecartee du classement : elle ne doit pas
+    reapparaitre dans l'historique."""
+    assert [x for x in _historique() if x["nom_francais"] == "Film Test Reprise"] == []
