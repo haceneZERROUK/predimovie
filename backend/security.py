@@ -1,10 +1,24 @@
-# Hachage des mots de passe (bcrypt) et gestion des tokens JWT
+# Hachage des mots de passe (bcrypt), tokens JWT et verification des cles API
+import secrets
 from datetime import UTC, datetime, timedelta
 
 import bcrypt
 import jwt
 
 from backend.config import JWT_ALGORITHME, JWT_DUREE_VALIDITE_MINUTES, JWT_SECRET_KEY
+
+
+def cle_api_valide(cle_recue: str, cle_attendue: str) -> bool:
+    """Compare la cle envoyee dans l'en-tete a celle qu'on attend.
+
+    Renvoie toujours False quand aucune cle n'est configuree : sinon une
+    variable d'environnement oubliee laisse la route grande ouverte, vu que
+    la cle attendue vaut "" et qu'une requete sans en-tete envoie "" aussi.
+    compare_digest prend toujours le meme temps, donc on ne peut pas deviner
+    la cle caractere par caractere en chronometrant les reponses."""
+    if not cle_attendue:
+        return False
+    return secrets.compare_digest(cle_recue, cle_attendue)
 
 
 def hacher_mot_de_passe(mot_de_passe: str) -> str:

@@ -6,7 +6,13 @@ import jwt
 import pytest
 
 from backend.config import JWT_ALGORITHME, JWT_SECRET_KEY
-from backend.security import creer_token, decoder_token, hacher_mot_de_passe, verifier_mot_de_passe
+from backend.security import (
+    cle_api_valide,
+    creer_token,
+    decoder_token,
+    hacher_mot_de_passe,
+    verifier_mot_de_passe,
+)
 
 
 def test_hacher_puis_verifier_mot_de_passe_correct():
@@ -48,3 +54,19 @@ def test_decoder_token_expire_leve_une_erreur():
 
     with pytest.raises(jwt.ExpiredSignatureError):
         decoder_token(token_expire)
+
+
+def test_cle_api_acceptee_si_elle_correspond():
+    assert cle_api_valide("la-bonne-cle", "la-bonne-cle") is True
+
+
+def test_cle_api_refusee_si_elle_ne_correspond_pas():
+    assert cle_api_valide("mauvaise", "la-bonne-cle") is False
+
+
+def test_cle_api_refusee_quand_aucune_cle_nest_configuree():
+    # le cas qui laissait la porte ouverte : sans variable d'environnement
+    # la cle attendue vaut "", et une requete sans en-tete envoie "" aussi,
+    # donc l'ancienne comparaison "" != "" laissait passer
+    assert cle_api_valide("", "") is False
+    assert cle_api_valide("nimportequoi", "") is False

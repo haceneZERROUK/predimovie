@@ -17,13 +17,14 @@ Un compte de démonstration est mis à disposition pour la parcourir :
 
 | | |
 |---|---|
-| Identifiant | `demo@predimovie.fr` |
-| Mot de passe | `DemoJury2026!` |
+| Identifiant | `cine-test` |
+| Mot de passe | `Cinema123` |
 
 Ce compte a le rôle `CINEMA`. Il donne accès à l'accueil et au **Top 10 des sorties de la
 semaine**, avec la prédiction d'entrées calculée pour chaque film. Les pages
 d'administration (historique prédit/réel, monitoring, gestion des comptes) sont réservées
-au rôle `ADMIN` et resteront inaccessibles.
+au rôle `ADMIN` et resteront inaccessibles, tout comme la relance des prédictions et le
+réentraînement du modèle.
 
 ## L'API
 

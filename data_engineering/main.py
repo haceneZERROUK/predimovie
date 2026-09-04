@@ -1,4 +1,5 @@
 # Petite API pour declencher les etapes du pipeline en HTTP
+import secrets
 from datetime import date
 
 from fastapi import Depends, FastAPI, Header, HTTPException
@@ -12,8 +13,12 @@ app = FastAPI(title="Predimovie - Scraper")
 
 
 def verifier_cle_api(x_api_key: str = Header(default="")):
-    """Verifie la cle API passee dans l'en-tete X-Api-Key."""
-    if x_api_key != SCRAPER_API_KEY:
+    """Verifie la cle API passee dans l'en-tete X-Api-Key.
+
+    On refuse aussi quand aucune cle n'est configuree : sinon SCRAPER_API_KEY
+    vaut "" et une requete sans en-tete passerait, ce qui ouvrirait tout le
+    pipeline de scraping."""
+    if not SCRAPER_API_KEY or not secrets.compare_digest(x_api_key, SCRAPER_API_KEY):
         raise HTTPException(status_code=401, detail="Clé API invalide")
 
 

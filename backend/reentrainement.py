@@ -5,6 +5,7 @@ import logging
 from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException
 
 from backend.config import TRAIN_API_KEY
+from backend.security import cle_api_valide
 from ml.train import main as reentrainer_le_modele
 
 router = APIRouter()
@@ -12,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 def verifier_cle_api(x_api_key: str = Header(default="")):
-    if x_api_key != TRAIN_API_KEY:
+    if not cle_api_valide(x_api_key, TRAIN_API_KEY):
         raise HTTPException(status_code=401, detail="Clé API invalide")
 
 

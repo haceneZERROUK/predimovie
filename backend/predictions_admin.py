@@ -8,6 +8,7 @@ from backend.auth import utilisateur_admin
 from backend.config import PREDICTION_API_KEY
 from backend.moteur_prediction import predire
 from backend.schemas import HistoriquePrediction, HistoriqueReponse, RelanceReponse
+from backend.security import cle_api_valide
 from database.base import SessionLocal
 from database.models import Oeuvre, Prediction
 
@@ -15,7 +16,7 @@ router = APIRouter()
 
 
 def verifier_cle_api(x_api_key: str = Header(default="")):
-    if x_api_key != PREDICTION_API_KEY:
+    if not cle_api_valide(x_api_key, PREDICTION_API_KEY):
         raise HTTPException(status_code=401, detail="Clé API invalide")
 
 
