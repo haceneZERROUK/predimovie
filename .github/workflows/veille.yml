@@ -45,7 +45,9 @@ jobs:
             exit 0
           fi
 
-          BRANCHE="veille/maj-$(date +%Y-%m-%d)"
+          # pas de prefixe "veille/" : une branche nommee "veille" existe deja,
+          # et git refuse qu un nom soit a la fois une branche et un dossier
+          BRANCHE="maj-veille-$(date +%Y-%m-%d)"
           NB=$(python3 -c "import json; print(len(json.load(open('veille/articles_veille.json'))['articles']))")
 
           git config user.name "github-actions[bot]"
