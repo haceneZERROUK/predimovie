@@ -6,9 +6,10 @@
 from datetime import date, timedelta
 
 from fastapi import APIRouter, Depends
-from sqlalchemy import extract, func, or_
+from sqlalchemy import func
 
 from backend.auth import utilisateur_connecte
+from backend.filtres_oeuvres import filtres_fiche_complete, filtres_ressortie
 from backend.schemas import FilmAVenir
 from database.base import SessionLocal
 from database.models import Oeuvre
@@ -32,20 +33,13 @@ def _mercredi_de_la_semaine(jour: date) -> date:
     return jour - timedelta(days=(jour.weekday() - 2) % 7)
 
 
-def _filtres_film_predictible(session):
+def _filtres_film_predictible():
     """Filtres communs aux deux requetes : entrees pas encore connues,
     fiche TMDB presente, et pas une ressortie."""
     return (
         Oeuvre.entrees_premiere_semaine.is_(None),
-        # sans fiche TMDB on n'a ni casting ni genre, la prediction ne
-        # vaudrait rien
-        Oeuvre.id_tmdb.isnot(None),
-        # on ecarte les ressorties, avec le meme ecart d'1 an que le
-        # matching TMDB
-        or_(
-            Oeuvre.annee_sortie.is_(None),
-            extract("year", Oeuvre.date_sortie) - Oeuvre.annee_sortie <= 1,
-        ),
+        *filtres_fiche_complete(),
+        *filtres_ressortie(),
     )
 
 
@@ -54,7 +48,7 @@ def films_a_venir(_utilisateur: dict = Depends(utilisateur_connecte)):
     session = SessionLocal()
     try:
         mercredi = _prochain_mercredi()
-        filtres = _filtres_film_predictible(session)
+        filtres = _filtres_film_predictible()
 
         films = (
             session.query(Oeuvre)

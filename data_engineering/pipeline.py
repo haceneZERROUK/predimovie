@@ -118,6 +118,34 @@ def enrichir_avec_tmdb(titre: str, annee: int | None) -> dict | None:
     }
 
 
+# une sortie et sa reprise partagent le meme id_tmdb : on ne considere
+# que c'est le meme film que si les deux dates tombent la meme semaine
+ECART_MEME_SORTIE = timedelta(days=7)
+
+
+def _chercher_meme_sortie(session: Session, infos_tmdb: dict | None) -> Oeuvre | None:
+    """Retrouve un film deja en base a partir de son id_tmdb, quand JPBOX
+    l'expose sous deux id_jpbox differents (une ligne au calendrier, une
+    autre au classement). C'est ce qui creait des doublons a l'ecran.
+
+    On exige que les deux dates de sortie soient dans la meme semaine :
+    sans ca on fusionnerait une reprise en salle avec la sortie d'origine,
+    alors que ce sont bien deux exploitations differentes."""
+    if infos_tmdb is None or infos_tmdb.get("id_tmdb") is None:
+        return None
+
+    date_tmdb = infos_tmdb.get("date_sortie")
+    candidats = session.query(Oeuvre).filter_by(id_tmdb=infos_tmdb["id_tmdb"]).all()
+    for candidat in candidats:
+        # sans date des deux cotes on ne peut pas trancher, on laisse
+        # le doublon plutot que de fusionner deux films differents
+        if date_tmdb is None or candidat.date_sortie is None:
+            continue
+        if abs(candidat.date_sortie - date_tmdb) <= ECART_MEME_SORTIE:
+            return candidat
+    return None
+
+
 def sauvegarder_film(
     session: Session,
     id_jpbox: int | None,
@@ -128,13 +156,16 @@ def sauvegarder_film(
     notes_imdb: dict | None = None,
     id_allocine: int | None = None,
 ) -> Oeuvre:
-    """Cherche le film par id_jpbox puis id_allocine. S'il n'existe pas on
-    le cree, et dans les deux cas on le complete avec les infos TMDB."""
+    """Cherche le film par id_jpbox, id_allocine, puis par id_tmdb sur la
+    meme semaine. S'il n'existe pas on le cree, et dans les deux cas on le
+    complete avec les infos TMDB."""
     oeuvre = None
     if id_jpbox is not None:
         oeuvre = session.query(Oeuvre).filter_by(id_jpbox=id_jpbox).first()
     if oeuvre is None and id_allocine is not None:
         oeuvre = session.query(Oeuvre).filter_by(id_allocine=id_allocine).first()
+    if oeuvre is None:
+        oeuvre = _chercher_meme_sortie(session, infos_tmdb)
 
     if oeuvre is None:
         nature = _get_ou_creer_nature(session, "Film")
@@ -148,6 +179,13 @@ def sauvegarder_film(
         )
         session.add(oeuvre)
         session.flush()
+    else:
+        # la ligne existait sous un autre identifiant : on complete, sinon
+        # le prochain passage ne la retrouvera toujours pas
+        if oeuvre.id_jpbox is None:
+            oeuvre.id_jpbox = id_jpbox
+        if oeuvre.id_allocine is None:
+            oeuvre.id_allocine = id_allocine
 
     return _enrichir_oeuvre(session, oeuvre, infos_tmdb, notes_imdb)
 
