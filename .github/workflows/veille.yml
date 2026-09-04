@@ -57,14 +57,24 @@ jobs:
           git commit -m "Met a jour les articles de veille ($NB articles)"
           git push --force origin "$BRANCHE"
 
-          # --fill reprendrait le message du commit ; on ecrit un corps plus
-          # explicite pour que la PR se lise sans ouvrir le diff
-          gh pr create \
-            --base main \
-            --head "$BRANCHE" \
-            --title "Veille hebdomadaire du $(date +%d/%m/%Y)" \
-            --body "Collecte automatique du $(date +%d/%m/%Y) : $NB articles retenus sur le scraping.
+          # La creation de PR par un workflow demande que l'option
+          # "Allow GitHub Actions to create and approve pull requests" soit
+          # activee (Settings > Actions > General). Si elle ne l'est pas, la
+          # branche reste poussee et il suffit d'ouvrir la PR a la main : on
+          # le signale clairement au lieu de faire passer le job au vert.
+          if gh pr create \
+              --base main \
+              --head "$BRANCHE" \
+              --title "Veille hebdomadaire du $(date +%d/%m/%Y)" \
+              --body "Collecte automatique du $(date +%d/%m/%Y) : $NB articles retenus.
 
-          Genere par le workflow \`veille.yml\`. Le fichier \`veille/articles_veille.json\`
-          alimente la page de veille du PoC Streamlit." \
-            || echo "une pull request existe deja pour cette branche"
+          Genere par le workflow veille.yml. Le fichier veille/articles_veille.json
+          alimente la page de veille du PoC Streamlit."; then
+            echo "pull request ouverte"
+          elif gh pr list --head "$BRANCHE" --json number -q '.[0].number' | grep -q .; then
+            echo "une pull request existe deja pour $BRANCHE, rien a faire"
+          else
+            echo "::warning::branche $BRANCHE poussee, mais la PR n a pas pu etre creee."
+            echo "::warning::activer Settings > Actions > General > Allow GitHub Actions"
+            echo "::warning::to create and approve pull requests, ou ouvrir la PR a la main."
+          fi
