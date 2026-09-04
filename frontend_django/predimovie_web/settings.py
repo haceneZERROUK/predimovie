@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 import os
+import sys
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -135,11 +136,23 @@ USE_TZ = True
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
+# le stockage "Manifest" renomme les fichiers avec un hash, ce qui veut dire
+# qu'il faut avoir lance collectstatic avant, sinon chaque {% static %} leve
+# "Missing staticfiles manifest entry". C'est bien en prod (le Dockerfile
+# fait le collectstatic), mais pas pendant les tests : la CI ne le lance pas
+# et les 15 tests de vues plantaient. On garde donc la version sans manifest
+# quand on tourne sous pytest.
+SOUS_TESTS = "PYTEST_VERSION" in os.environ or "pytest" in sys.modules
+
 STORAGES = {
     "default": {
         "BACKEND": "django.core.files.storage.FileSystemStorage",
     },
     "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        "BACKEND": (
+            "whitenoise.storage.CompressedStaticFilesStorage"
+            if SOUS_TESTS
+            else "whitenoise.storage.CompressedManifestStaticFilesStorage"
+        ),
     },
 }
