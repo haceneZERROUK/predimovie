@@ -1,6 +1,30 @@
 {
-  "date_maj": "2026-09-04T15:22:31.536901+00:00",
+  "date_maj": "2026-09-28T15:07:06.949588+00:00",
   "articles": [
+    {
+      "titre": "ChatGPT web scraping guide for 2026",
+      "url": "https://blog.apify.com/chatgpt-web-scraping/",
+      "tags": [
+        "AI",
+        "Job listings",
+        "MCP"
+      ],
+      "auteur": "Egop Gogo-Job",
+      "date": "2026-09-21",
+      "extrait": ""
+    },
+    {
+      "titre": "We ran 4 web unblockers through 384 URLs. Here's what came back",
+      "url": "https://blog.apify.com/web-unblocker-benchmark/",
+      "tags": [
+        "Anti-blocking",
+        "AI agents",
+        "Tool comparisons"
+      ],
+      "auteur": "Magda Rýdová",
+      "date": "2026-09-08",
+      "extrait": ""
+    },
     {
       "titre": "The 12 best proxy providers for web scraping in 2026",
       "url": "https://blog.apify.com/best-proxy-providers/",
@@ -95,16 +119,6 @@
       "extrait": ""
     },
     {
-      "titre": "What is an anonymous proxy? A detailed guide for 2025",
-      "url": "https://blog.apify.com/what-is-an-anonymous-proxy/",
-      "tags": [
-        "Anti-blocking"
-      ],
-      "auteur": "Michelle Macias",
-      "date": "2025-03-17",
-      "extrait": ""
-    },
-    {
       "titre": "Building a We Work Remotely scraper with company enrichment using Apify Actors",
       "url": "https://blog.apify.com/building-a-we-work-remotely-scraper/",
       "tags": [
@@ -113,6 +127,18 @@
       ],
       "auteur": "CrawlPilot",
       "date": "2026-07-03",
+      "extrait": ""
+    },
+    {
+      "titre": "Firecrawl vs. BeautifulSoup: Which is better for web scraping?",
+      "url": "https://blog.apify.com/firecrawl-vs-beautifulsoup/",
+      "tags": [
+        "Tool comparisons",
+        "AI",
+        "Scraping libraries and frameworks"
+      ],
+      "auteur": "Antonello Zanini",
+      "date": "2026-06-30",
       "extrait": ""
     },
     {
@@ -175,18 +201,6 @@
       "extrait": ""
     },
     {
-      "titre": "Firecrawl vs. BeautifulSoup: Which is better for web scraping?",
-      "url": "https://blog.apify.com/firecrawl-vs-beautifulsoup/",
-      "tags": [
-        "Tool comparisons",
-        "AI",
-        "Scraping libraries and frameworks"
-      ],
-      "auteur": "Antonello Zanini",
-      "date": "2025-09-03",
-      "extrait": ""
-    },
-    {
       "titre": "5 best JavaScript web scraping libraries in 2025",
       "url": "https://blog.apify.com/best-javascript-web-scraping-libraries/",
       "tags": [
@@ -202,7 +216,7 @@
       "titre": "IMPIT: browser impersonation made simple",
       "url": "https://blog.apify.com/impit-browser-impersonation-made-simple/",
       "tags": [
-        "programming",
+        "Programming",
         "Scraping libraries and frameworks"
       ],
       "auteur": "Jindřich Bär",
